@@ -2,17 +2,18 @@ use crate::core::FixedPointProblem;
 use num::traits::float::Float;
 use serde::{Deserialize, Serialize};
 use instant;
+use paste::item;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct State<O: FixedPointProblem> {
     /// Current parameter vector
-    pub param: O::Output,
+    pub param: O::Param,
     /// Previous parameter vector
-    pub prev_param: O::Output,
+    pub prev_param: O::Param,
     /// Current best parameter vector
-    pub best_param: O::Output,
+    pub best_param: O::Param,
     /// Previous best parameter vector
-    pub prev_best_param: O::Output,
+    pub prev_best_param: O::Param,
     /// Current cost function
     pub cost: O::Float,
     /// Previous cost
@@ -33,8 +34,40 @@ pub struct State<O: FixedPointProblem> {
     pub termination_reason: TerminationReason,
 }
 
+macro_rules! setter {
+    ($name:ident, $type:ty, $doc:tt) => {
+        #[doc=$doc]
+        pub fn $name(&mut self, $name: $type) -> &mut Self {
+            self.$name = $name;
+            self
+        }
+    };
+}
+
+macro_rules! getter {
+    ($name:ident, $type:ty, $doc:tt) => {
+        item! {
+            #[doc=$doc]
+            pub fn [<get_ $name>](&self) -> $type {
+                self.$name.clone()
+            }
+        }
+    };
+}
+
+macro_rules! ogetter {
+    ($name:ident, $type:ty, $doc:tt) => {
+        item! {
+            #[doc=$doc]
+            pub fn [<get_ $name>](&self) -> Option<$type> {
+                self.$name.clone()
+            }
+        }
+    };
+}
+
 impl <O: FixedPointProblem> State<O> {
-    pub fn new(param: O::Output) -> Self {
+    pub fn new(param: O::Param) -> Self {
         State {
             param: param.clone(),
             prev_param: param.clone(),
@@ -51,11 +84,54 @@ impl <O: FixedPointProblem> State<O> {
             termination_reason: TerminationReason::NotTerminated,
         }
     }
+
+    pub fn terminated(&self) -> bool {
+        match self.termination_reason {
+            TerminationReason::NotTerminated => false,
+            TerminationReason::ToleranceBeaten => true,
+            TerminationReason::HitMaxIterations => true,
+        }
+    }
+
+    pub fn termination_reason(&mut self, reason: TerminationReason) {
+        self.termination_reason = reason;
+    }
+
+    getter!(param, O::Param, "Returns current parameter vector");
 }
 
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum TerminationReason {
-    NotTerminated
+    NotTerminated,
+    ToleranceBeaten,
+    HitMaxIterations
 }
 
+#[derive(Clone, Debug, Default)]
+pub struct IterData<P: FixedPointProblem> {
+    param: Option<P::Param>,
+    cost: Option<P::Float>,
+}
+
+impl<P:FixedPointProblem> IterData<P> {
+    pub fn new() -> Self {
+        IterData {
+            param: None,
+            cost: None,
+        }
+    }
+
+    pub fn param(mut self, param: P::Param) -> Self {
+        self.param = Some(param);
+        self
+    }
+
+    pub fn cost(mut self, cost: P::Float) -> Self {
+        self.cost = Some(cost);
+        self
+    }
+    
+    ogetter!(param, P::Param, "Returns current parameter vector");
+    ogetter!(cost, P::Float, "Returns current cost");
+}

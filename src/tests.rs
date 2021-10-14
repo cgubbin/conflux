@@ -1,6 +1,6 @@
-use crate::prelude::*;
+use crate::{prelude::*, solvers::linear::LinearMixer};
 use miette::Result;
-use ndarray::Array1;
+use ndarray::{Array1, Array2};
 
 struct TestCase {
     F: Array1<f64>
@@ -9,26 +9,35 @@ struct TestCase {
 impl TestCase {
     fn new() -> TestCase {
         TestCase {
-            F: Array1::zeros(20)
+            F: Array1::zeros(2)
         }
     }
 }
 
 impl FixedPointProblem for TestCase {
     type Output = Array1<f64>;
+    type Param = Array1<f64>;
+    type Float = f64;
+    type Square = Array2<f64>;
 
-//    fn update(&self) -> Result<Self::Output> {
-//        let out = Array1::zeros(20);
-//        Ok(out)
-//    }
+    fn update(&self, values: &Self::Param) -> Result<Self::Param> {
+        let mut out = Array1::zeros(2);
+        out[0] = values[0].sin() / values[0].powi(2);
+        out[1] = values[1].cos() / values[1].powi(2);
+        Ok(out)
+    }
 }
 
 #[test]
-fn test_init() {
+fn test_linear() {
     let cost = TestCase::new();
+    let mixer: LinearMixer<f64> = LinearMixer::new(0.1, 1e-12, 1000);
 
-    let init = Array1::zeros(20);
-    Mixer::new(cost, )
+    let init: Array1<f64> = Array1::ones(2);
+    let mut solver = FixedPointSolver::new(mixer, init);
+
+    let result = solver.run(&cost).unwrap();   
+    println!("{}", result.get_param());
 }
 
 

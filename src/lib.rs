@@ -3,6 +3,8 @@
 #[macro_use]
 pub mod core;
 
+pub mod solvers;
+
 pub mod prelude;
 
 #[cfg(test)]

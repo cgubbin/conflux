@@ -1,9 +1,12 @@
-//! Node fixed point iteration tools core module
-//!
-//! This crate holds the core functionality of the library.
+/*!
+Node fixed point iteration tools core module
+
+This crate holds the core functionality of the library.
+*/
 
 /// Error Handling
 mod errors;
+mod math;
 mod solver;
 mod state;
 
@@ -14,6 +17,7 @@ use serde::Serialize;
 use std::fmt::{Debug, Display};
 
 pub use errors::*;
+pub use math::*;
 pub use solver::*;
 pub use state::*;
 
@@ -40,11 +44,15 @@ impl<I> FPFloat for I where
 pub trait FixedPointProblem {
     /// The type of the output returned by the fixed point iteration
     type Output: Clone + Serialize + DeserializeOwned;
+    /// The type of the input required by the fixed point iteration
+    type Param: Clone + Serialize + DeserializeOwned;
     /// Floating point precision
     type Float: FPFloat;
+    /// Type for square matrices
+    type Square: Clone + Serialize + DeserializeOwned;
 
     /// Carries out the full self-consistent iteration for the problem
-    fn update(&self) -> Result<Self::Output> {
+    fn update(&self, values: &Self::Param) -> Result<Self::Param> {
         Err(
             FixedPointError::UnimplementedOperation
         )?
@@ -53,22 +61,25 @@ pub trait FixedPointProblem {
 
 
 /// This trait defines the mixer operation. All mixers implement the trait
-pub trait Mixer<O: FixedPointProblem>: Serialize {
+pub trait Mixer<P: FixedPointProblem>: Serialize {
     /// The name of the mixing algorithm
     const NAME: &'static str = "UNDEFINED";
 
     /// Defines a single iteration of the mixing operation
     fn next_iter(
-        &mut self
-    ) -> Result<O::Output>;
+        &mut self,
+        op: &P,
+        state: &State<P>,
+    ) -> Result<IterData<P>>;
 
-    /// Initializes the mixing algorithm
-    fn init(
-        &mut self
-    ) -> Result<O::Output>;
+//    /// Initializes the mixing algorithm
+//    fn init(
+//        &mut self
+//    ) -> Result<O::Output>;
 
     /// Checks whether termination conditions are satisfied
     fn terminate(
-        &mut self
-    ) -> Result<O::Output>;
+        &mut self,
+        state: &State<P>,
+    ) -> Result<TerminationReason>;
 }
