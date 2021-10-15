@@ -1,4 +1,4 @@
-use crate::core::math::{FPZeros, FPZerosLike, FPFromZeros};
+use crate::core::math::{FPFromZeros, FPZeros, FPZerosLike};
 use num::Zero;
 
 impl<T> FPZerosLike for ndarray::Array1<T>
@@ -41,17 +41,18 @@ where
     }
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
-    use paste::item;
     use ndarray::{array, Array1, Array2};
+    use paste::item;
 
     macro_rules! make_test {
         ($t:ty) => {
             item! {
                 #[test]
                 fn [<test_zeros_like_ $t>]() {
-                    let t: ndarray::Array1<$t> = ndarray::array![];
+                    let t: Array1<$t> = array![];
                     let a = t.zeros_like();
                     assert_eq!(t, a);
                 }

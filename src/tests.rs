@@ -1,19 +1,25 @@
-use crate::{prelude::*, solvers::{anderson::Type1AndersonMixer, linear::LinearMixer}};
+/**
+Tests for running algorithms
+*/
+use crate::prelude::*;
 use miette::Result;
 use ndarray::{Array1, Array2};
 
+/// Simple test structure
 struct TestCase {
-    F: Array1<f64>
+    _f: Array1<f64>,
 }
 
 impl TestCase {
+    /// Generates the new test structure
     fn new() -> TestCase {
         TestCase {
-            F: Array1::zeros(2)
+            _f: Array1::zeros(2),
         }
     }
 }
 
+/// Impl of a FixedPointProblem for the testcase
 impl FixedPointProblem for TestCase {
     type Output = Array1<f64>;
     type Param = Array1<f64>;
@@ -32,30 +38,32 @@ impl FixedPointProblem for TestCase {
     }
 }
 
-#[test]
-fn test_linear() {
-    let cost = TestCase::new();
-    let mixer: LinearMixer<f64> = LinearMixer::new(0.1, std::f64::EPSILON, 1000);
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::solvers::{anderson::Type1AndersonMixer, linear::LinearMixer};
 
-    let init: Array1<f64> = Array1::ones(6);
-    let mut solver = FixedPointSolver::new(mixer, init);
+    #[test]
+    fn test_linear() {
+        let cost = TestCase::new();
+        let mixer: LinearMixer<f64> = LinearMixer::new(0.1, std::f64::EPSILON, 1000);
 
-    let result = solver.run(&cost).unwrap();   
-    println!("{}", result.get_param());
+        let init: Array1<f64> = Array1::ones(6);
+        let mut solver = FixedPointSolver::new(mixer, init);
+
+        let result = solver.run(&cost).unwrap();
+        println!("{}", result.get_param());
+    }
+
+    #[test]
+    fn test_stable_anderson() {
+        let cost = TestCase::new();
+        let init: Array1<f64> = Array1::ones(6);
+        let mixer = Type1AndersonMixer::new(init.len(), std::f64::EPSILON, 1000);
+
+        let mut solver = FixedPointSolver::new(mixer, init);
+
+        let result = solver.run(&cost).unwrap();
+        println!("{}", result.get_param());
+    }
 }
-
-#[test]
-fn test_stable_anderson() {
-    let cost = TestCase::new();
-    let init: Array1<f64> = Array1::ones(6);
-    let mixer = Type1AndersonMixer::new(init.len(), std::f64::EPSILON, 1000);
-
-    let mut solver = FixedPointSolver::new(mixer, init);
-
-    let result = solver.run(&cost).unwrap();   
-    println!("{}", result.get_param());
-}
-
-
-
-

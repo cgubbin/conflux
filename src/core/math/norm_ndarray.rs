@@ -26,7 +26,11 @@ macro_rules! make_norm_complex_float {
         impl FPNorm<$t> for Array1<Complex<$t>> {
             #[inline]
             fn norm(&self) -> $t {
-                self.iter().map(|a| a.powf(2.0)).sum::<Complex<$t>>().sqrt().norm()
+                self.iter()
+                    .map(|a| a.powf(2.0))
+                    .sum::<Complex<$t>>()
+                    .sqrt()
+                    .norm()
             }
         }
     };

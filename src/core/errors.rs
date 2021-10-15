@@ -1,22 +1,15 @@
-//! This module defines the errors for the core crate
+/*!
+This module defines the errors for the core crate
+*/
 
-use thiserror::Error;
 use miette::Diagnostic;
+use thiserror::Error;
 
 #[derive(Error, Diagnostic, Debug)]
+/// Error type for the crate
 pub enum FixedPointError {
-    #[error(transparent)]
-    #[diagnostic(code(my_lib::io_error))]
-    IoError(#[from] std::io::Error),
-
-    #[error("Oops it blew up")]
-    #[diagnostic(code(my_lib::bad_code))]
-    BadThingHappened,
-
     #[error("Unimplemented operation")]
-    #[diagnostic(
-        help("Check the default implementation for FixedPoint"),
-        url(docsrs)
-    )]
+    #[diagnostic(help("Check the default implementation for FixedPoint"), url(docsrs))]
+    /// Error warns when a required trait or operation is unimplemented
     UnimplementedOperation,
 }

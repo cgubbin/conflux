@@ -3,16 +3,17 @@ use ndarray::{Array1, Array2};
 
 impl<T> FPStack<Array1<T>> for Array2<T>
 where
-    T: Clone
-    {
-        #[inline]
-        fn stack(&self, other: &Array1<T>) -> Array2<T> {
-            ndarray::concatenate(
-                ndarray::Axis(0),
-                &[self.view(), other.into_2d().view()]
-            ).unwrap()
-        }
+    T: Clone,
+{
+    #[inline]
+    fn stack(&self, other: &Array1<T>) -> Array2<T> {
+        ndarray::concatenate(
+            ndarray::Axis(0),
+            &[self.view(), other.clone().into_2d().view()],
+        )
+        .unwrap()
     }
+}
 
 #[cfg(test)]
 mod tests {
@@ -29,13 +30,13 @@ mod tests {
                     let mat: Array2<$t> = array![
                         [2 as $t, 3 as $t, 4 as $t],
                         [3 as $t, 4 as $t, 5 as $t]
-                    ]; 
+                    ];
                     let res = mat.stack(&e);
                     let target: Array2<$t> = array![
                         [2 as $t, 3 as $t, 4 as $t],
                         [3 as $t, 4 as $t, 5 as $t],
                         [1 as $t, 2 as $t, 120 as $t]
-                    ]; 
+                    ];
                     for i in 0..3 {
                         for j in 0..3 {
                             assert!((((res[(i, j)] - target[(i, j)]) as f64).abs()) < std::f64::EPSILON);

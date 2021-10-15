@@ -2,6 +2,6 @@
 Linear Mixer
 */
 
-pub mod linear;
+pub mod linear_mixer;
 
-pub use self::linear::*;
+pub use self::linear_mixer::*;

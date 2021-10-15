@@ -1,3 +1,7 @@
+/**
+This module contains overloaded mathematics operators to allow the mixing algorithms to
+operate with generic math libraries
+*/
 mod add;
 mod add_ndarray;
 mod div;
@@ -36,22 +40,28 @@ pub use crate::core::math::transpose_ndarray::*;
 pub use crate::core::math::zeros::*;
 pub use crate::core::math::zeros_ndarray::*;
 
-
 /// Add 'X' to 'self'
 pub trait FPAdd<X, Y> {
     /// Add 'X' to 'self'
     fn add(&self, other: &X) -> Y;
 }
 
+/// Stacks the vector 'X' under 'self'
 pub trait FPStack<X> {
+    /// Stacks the vector 'X' under 'self'
     fn stack(&self, other: &X) -> Self;
 }
 
+/// Checks whether 'self' is empty
 pub trait FPEmpty {
+    /// Checks whether 'self' is empty
     fn is_empty(&self) -> bool;
 }
+
+/// Creates an identity matrix of dimension 'x'
 pub trait FPEye {
-    fn eye(X: usize) -> Self;
+    /// Creates an identity matrix of dimension 'x'
+    fn eye(x: usize) -> Self;
 }
 
 /// Divide self by 'X'
@@ -66,8 +76,10 @@ pub trait FPMul<X, Y> {
     fn mul(&self, other: &X) -> Y;
 }
 
+/// Converts the row vector 'self' into a 2D array
 pub trait FPInto2D<X> {
-    fn into_2d(&self) -> X;
+    /// Converts the row vector 'self' into a 2D array
+    fn into_2d(self) -> X;
 }
 
 /// Sub 'X' from 'self'
@@ -76,9 +88,13 @@ pub trait FPSub<X, Y> {
     fn sub(&self, other: &X) -> Y;
 }
 
+/// Dot product of 'self' with 'X'
 pub trait FPDot<X, Y> {
+    /// Dot product of 'self' with 'X'
     fn dot(&self, other: &X) -> Y;
 }
+
+/// Transpose of 'self'
 pub trait FPTranspose {
     /// Generate the transpose of self
     fn t(&self) -> Self;
@@ -90,14 +106,20 @@ pub trait FPNorm<X> {
     fn norm(&self) -> X;
 }
 
+/// Generates a zero
 pub trait FPZeros {
+    /// Generates a zero
     fn zeros() -> Self;
 }
 
+/// Generates an array of zeros with dim 'x'
 pub trait FPFromZeros {
-    fn zeros(X: usize) -> Self;
+    /// Generates an array of zeros with dim 'x'
+    fn zeros(x: usize) -> Self;
 }
 
+/// Generates an array of zeros of dim of 'self'
 pub trait FPZerosLike {
+    /// Generates an array of zeros of dim of 'self'
     fn zeros_like(&self) -> Self;
 }

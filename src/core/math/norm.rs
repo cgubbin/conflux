@@ -23,7 +23,6 @@ macro_rules! make_norm {
     };
 }
 
-
 macro_rules! make_norm_complex {
     ($t:ty) => {
         impl FPNorm<$t> for Complex<$t> {

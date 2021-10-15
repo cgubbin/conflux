@@ -1,10 +1,11 @@
-use crate::core::{FixedPointProblem, IterData, Mixer, State, TerminationReason};
+use crate::core::{FixedPointProblem, IterData, Mixer, State};
 use miette::Result;
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 #[derive(Clone, Serialize, Deserialize)]
+/// Data type for the solver of a fixed point problem
 pub struct FixedPointSolver<P: FixedPointProblem, M> {
     /// method
     mixer: M,
@@ -16,6 +17,8 @@ pub struct FixedPointSolver<P: FixedPointProblem, M> {
     state: State<P>,
 }
 
+#[derive(Clone, Serialize, Deserialize)]
+/// Data type for the result of a fixed point problem
 pub struct FixedPointResult<P: FixedPointProblem> {
     /// Result
     param: P::Param,
@@ -24,10 +27,11 @@ pub struct FixedPointResult<P: FixedPointProblem> {
     cost: P::Float,
 
     /// Terminated
-    terminated: bool
+    terminated: bool,
 }
 
 impl<P: FixedPointProblem> FixedPointResult<P> {
+    /// Return the parameter from the result object
     pub fn get_param(&self) -> P::Param {
         self.param.clone()
     }
@@ -38,6 +42,7 @@ where
     P: FixedPointProblem,
     M: Mixer<P>,
 {
+    /// Create a fixed point solver from a Mixer and a starting parameter
     pub fn new(mixer: M, initial_parameter: P::Param) -> Self {
         FixedPointSolver {
             mixer,
@@ -46,18 +51,18 @@ where
         }
     }
 
+    /// Run the fixed point solver
     pub fn run(&mut self, op: &P) -> Result<FixedPointResult<P>> {
         let running = Arc::new(AtomicBool::new(true));
 
         while running.load(Ordering::SeqCst) {
-
             if !self.state.terminated() {
                 self.state
                     .termination_reason(self.mixer.terminate(&self.state).unwrap())
             }
 
             if self.state.terminated() {
-                break
+                break;
             }
 
             let output = self.mixer.next_iter(op, &self.state).unwrap();
@@ -66,17 +71,18 @@ where
         }
 
         Ok(self.generate_result())
-
     }
 
+    /// Generates the result from a converged or non-converged solution
     fn generate_result(&self) -> FixedPointResult<P> {
         FixedPointResult {
             param: self.state.get_param(),
             cost: self.state.cost,
-            terminated: self.state.terminated()
+            terminated: self.state.terminated(),
         }
     }
 
+    /// Updates the State struct based on a single iteration's output
     fn update(&mut self, output: &IterData<P>) {
         self.state.prev_param = self.state.param.clone();
         self.state.param = output.get_param().unwrap();
@@ -91,13 +97,5 @@ where
         }
 
         self.state.iter += 1;
-    }
-
-    fn terminated(&self) -> bool {
-        match self.state.termination_reason {
-            TerminationReason::NotTerminated => false,
-            TerminationReason::ToleranceBeaten => true,
-            TerminationReason::HitMaxIterations => true,
-        }
     }
 }

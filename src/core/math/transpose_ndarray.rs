@@ -2,7 +2,7 @@ use crate::core::math::FPTranspose;
 
 impl<T> FPTranspose for ndarray::Array2<T>
 where
-    T: Clone
+    T: Clone,
 {
     #[inline]
     fn t(&self) -> ndarray::Array2<T> {
@@ -12,7 +12,7 @@ where
 
 impl<T> FPTranspose for ndarray::Array1<T>
 where
-    T: Clone
+    T: Clone,
 {
     #[inline]
     fn t(&self) -> ndarray::Array1<T> {

@@ -1,5 +1,5 @@
 use crate::core::math::FPSub;
-use ndarray::{Array1};
+use ndarray::Array1;
 
 macro_rules! make_sub {
     ($t:ty) => {

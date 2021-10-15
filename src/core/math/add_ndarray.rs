@@ -1,5 +1,5 @@
 use crate::core::math::FPAdd;
-use ndarray::{Array1};
+use ndarray::Array1;
 
 macro_rules! make_add {
     ($t:ty) => {

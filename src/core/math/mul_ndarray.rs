@@ -1,5 +1,5 @@
 use crate::core::math::FPMul;
-use ndarray::{Array1};
+use ndarray::Array1;
 
 macro_rules! make_mul {
     ($t:ty) => {

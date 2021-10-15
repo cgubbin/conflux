@@ -1,5 +1,5 @@
 use crate::core::math::FPDiv;
-use ndarray::{Array1};
+use ndarray::Array1;
 
 macro_rules! make_div {
     ($t:ty) => {

@@ -1,21 +1,19 @@
 /*!
- Type 1 Anderson Mixer
+Type 1 Anderson Mixer
 
- Reference: 
- */
-
+Reference:
+*/
 
 use crate::prelude::*;
 use miette::Result;
-use ndarray::{Array1, Array2};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Deserialize, Serialize)]
+/// Type 1 Anderson Mixer with stabilisation
 pub struct Type1AndersonMixer<F, P: FixedPointProblem> {
     dim: usize,
     tol: F,
     regularisation: F,
-    relaxation: F,
     safeguard_factor: F,
     iter: u64,
     m: u64,
@@ -46,7 +44,7 @@ pub struct Type1AndersonMixer<F, P: FixedPointProblem> {
     s_history: P::Square,
     s_hat_memory: P::Square,
     y_tilde: P::Param,
-    Ubar: F,
+    ubar: F,
     n_anderson: u64,
 }
 
@@ -59,14 +57,17 @@ where
         + FPAdd<P::Param, P::Param>
         + FPDiv<P::Float, P::Param>
         + FPTranspose
-        + FPDot<P::Param, P::Square> + FPDot<P::Square, P::Param> + FPDot<P::Param, P::Float>
+        + FPDot<P::Param, P::Square>
+        + FPDot<P::Square, P::Param>
+        + FPDot<P::Param, P::Float>
         + FPInto2D<P::Square>,
     P::Square: FPEye
-     + FPFromZeros 
-     + FPEmpty
-     + FPTranspose
-     + FPDot<P::Square, P::Square> + FPDot<P::Param, P::Param>
-     + FPStack<P::Param>,
+        + FPFromZeros
+        + FPEmpty
+        + FPTranspose
+        + FPDot<P::Square, P::Square>
+        + FPDot<P::Param, P::Param>
+        + FPStack<P::Param>,
 {
     fn default() -> Self {
         Type1AndersonMixer::new(10, F::from_f64(1e-6).unwrap(), 1000)
@@ -82,25 +83,27 @@ where
         + FPAdd<P::Param, P::Param>
         + FPDiv<P::Float, P::Param>
         + FPTranspose
-        + FPDot<P::Square, P::Param> + FPDot<P::Param, P::Float>
+        + FPDot<P::Square, P::Param>
+        + FPDot<P::Param, P::Float>
         + FPInto2D<P::Square>,
     P::Square: FPEye
         + FPFromZeros
         + FPEmpty
         + FPTranspose
-        + FPDot<P::Square, P::Square> + FPDot<P::Param, P::Param>
+        + FPDot<P::Square, P::Square>
+        + FPDot<P::Param, P::Param>
         + FPStack<P::Param>,
 {
+    /// Generate a new Anderson Mixer with default parameters
     pub fn new(dimension: usize, tolerance: F, max_iter: u64) -> Self {
         Type1AndersonMixer {
             dim: dimension,
             tol: tolerance,
             regularisation: F::from_f64(1.).unwrap(),
-            relaxation: F::from_f64(1.).unwrap(),
             safeguard_factor: F::from_f64(1e6).unwrap(),
             iter: 0,
             m: 0,
-            max_iter: max_iter,
+            max_iter,
             beta: F::from_f64(1.).unwrap(),
             memory: 5,
             theta_bar: F::from_f64(1e-2).unwrap(),
@@ -125,76 +128,81 @@ where
             s_history: P::Square::zeros(0),
             s_hat_memory: P::Square::zeros(0),
             y_tilde: P::Param::zeros(dimension),
-            Ubar: F::from_f64(0.).unwrap(),
+            ubar: F::from_f64(0.).unwrap(),
             n_anderson: 0,
         }
     }
 
+    /// Factory method to set the regularisation parameter
     pub fn regularisation(mut self, regularisation: F) -> Self {
         self.regularisation = regularisation;
         self
     }
 
-    pub fn relaxation(mut self, relaxation: F) -> Self {
-        self.relaxation = relaxation;
-        self
-    }
-
+    /// Factory method to set the safeguard factor
     pub fn safeguard_factor(mut self, safeguard_factor: F) -> Self {
         self.safeguard_factor = safeguard_factor;
         self
     }
 
+    /// Factory method to set the relaxation beta
     pub fn beta(mut self, beta: F) -> Self {
         self.beta = beta;
         self
     }
 
+    /// Factory method to set the memory size for the mixer
     pub fn memory(mut self, memory: u64) -> Self {
         self.memory = memory;
         self
     }
 
+    /// Helper method to initialise for the first iteration
     fn init(&mut self, op: &P, state: &State<P>) {
         self.fx0 = op.update(&state.get_param()).expect("Failed to update");
         self.x0 = state.param.clone();
         self.g0 = self.x0.sub(&self.fx0);
-        self.Ubar = self.g0.norm();
+        self.ubar = self.g0.norm();
         self.n_anderson = 0;
         self.iter = 0;
         self.m = 0;
     }
 
+    /// Helper function for common matrix operation
     fn h_aa(&self, input: &P::Param) -> P::Param {
         if self.hv1.is_empty() | self.hv2.is_empty() {
             input.clone()
         } else {
-            input
-                .add(&self.hv1.t().dot(&self.hv2.dot(input)))
+            input.add(&self.hv1.t().dot(&self.hv2.dot(input)))
         }
     }
 
+    /// Safeguarding step
     fn safeguard(&mut self, op: &P) {
-        let Ubar0 = self.g0.norm();
-        let factor = self.Ubar * self.safeguard_factor * F::from_u64(self.n_anderson + 1).unwrap().powf(self.epsilon);
-        if (self.iter == 0) | (Ubar0 <= factor) {
+        let ubar0 = self.g0.norm();
+        let factor = self.ubar
+            * self.safeguard_factor
+            * F::from_u64(self.n_anderson + 1).unwrap().powf(self.epsilon);
+        if (self.iter == 0) | (ubar0 <= factor) {
             self.n_anderson += 1;
             self.x0 = self.x1.clone();
             self.fx0 = self.fx1.clone();
         } else {
-            self.x1 = self.x0.mul(&self.beta)
+            self.x1 = self
+                .x0
+                .mul(&self.beta)
                 .add(&self.fx0.mul(&(F::from_f64(1.).unwrap() - self.beta)));
             self.x0 = self.x1.clone();
             self.fx0 = op.update(&self.x0).expect("Failed to update");
         }
     }
 
+    /// Powell regularisation step
     fn regularise(&mut self) {
         if self.m <= self.memory {
             self.s0_hat = if !self.s_hat_memory.is_empty() {
                 self.s0
                     .sub(&(self.s_hat_memory.dot(&self.s0).t().dot(&self.s_hat_memory)).t())
-
             } else {
                 println!("iter={}, no orthogonalisation", self.iter);
                 self.s0.clone()
@@ -204,7 +212,7 @@ where
                 self.m = 1;
                 self.s_hat_memory = P::Square::zeros(0);
                 self.hv1 = P::Square::zeros(0);
-                self.hv2 = P::Square::zeros(0); 
+                self.hv2 = P::Square::zeros(0);
             }
         } else {
             // memory exceeds
@@ -212,7 +220,7 @@ where
             self.m = 1;
             self.s_hat_memory = P::Square::zeros(0);
             self.hv1 = P::Square::zeros(0);
-            self.hv2 = P::Square::zeros(0); 
+            self.hv2 = P::Square::zeros(0);
         }
         let norm_s0_hat = self.s0_hat.norm();
         let new_shat_row = self.s0_hat.div(&norm_s0_hat);
@@ -222,7 +230,8 @@ where
             self.s_hat_memory.stack(&new_shat_row)
         };
 
-        let gamma = self.s0_hat
+        let gamma = self
+            .s0_hat
             .t()
             .dot(&self.h_aa(&self.y0))
             .div(norm_s0_hat.powi(2));
@@ -230,35 +239,34 @@ where
         let theta = if gamma.abs() >= self.theta_bar {
             F::from_f64(1.).unwrap()
         } else {
-            F::from_f64(1.).unwrap() - gamma.signum() * self.theta_bar
-            .div(F::from_f64(1.).unwrap() - gamma)
+            F::from_f64(1.).unwrap()
+                - gamma.signum() * self.theta_bar.div(F::from_f64(1.).unwrap() - gamma)
         };
 
-        self.y_tilde = self.y0.mul(&theta) 
+        self.y_tilde = self
+            .y0
+            .mul(&theta)
             .sub(&self.g_prev.mul(&(F::from_f64(1.).unwrap() - theta)));
-        
+
         let h_y_tilde = self.h_aa(&self.y_tilde);
         let hvec1 = self.s0.sub(&h_y_tilde);
-        let hvec2 = self.h_aa(&self.s)
-            .div(&self.s0_hat.dot(&h_y_tilde));
-        
+        let hvec2 = self.h_aa(&self.s).div(&self.s0_hat.dot(&h_y_tilde));
+
         self.hv1 = if self.hv1.is_empty() {
             hvec1.into_2d()
         } else {
-            self.hv1
-                .stack(&hvec1)
+            self.hv1.stack(&hvec1)
         };
 
         self.hv2 = if self.hv2.is_empty() {
             hvec2.into_2d()
         } else {
-            self.hv2
-                .stack(&hvec2)
+            self.hv2.stack(&hvec2)
         };
     }
 }
 
-impl<P, F> Mixer<P> for Type1AndersonMixer<F, P> 
+impl<P, F> Mixer<P> for Type1AndersonMixer<F, P>
 where
     P::Param: FPFromZeros
         + FPSub<P::Param, P::Param>
@@ -267,28 +275,27 @@ where
         + FPAdd<P::Param, P::Param>
         + FPDiv<P::Float, P::Param>
         + FPTranspose
-        + FPDot<P::Square, P::Param> + FPDot<P::Param, P::Float>
+        + FPDot<P::Square, P::Param>
+        + FPDot<P::Param, P::Float>
         + FPInto2D<P::Square>
         + std::fmt::Debug,
     P::Square: FPEye
         + FPFromZeros
         + FPEmpty
         + FPTranspose
-        + FPDot<P::Square, P::Square> + FPDot<P::Param, P::Param>
+        + FPDot<P::Square, P::Square>
+        + FPDot<P::Param, P::Param>
         + FPStack<P::Param>,
     P: FixedPointProblem<Float = F>,
     F: FPFloat,
 {
-    
     const NAME: &'static str = "Type-I Anderson Mixing";
 
-    fn next_iter(
-        &mut self,
-        op: &P,
-        state: &State<P>,
-    ) -> Result<IterData<P>> {
-        if self.iter == 0 {self.init(op, state);}
-        
+    fn next_iter(&mut self, op: &P, state: &State<P>) -> Result<IterData<P>> {
+        if self.iter == 0 {
+            self.init(op, state);
+        }
+
         self.m += 1;
         if self.iter == 0 {
             self.x1 = self.fx0.clone();
@@ -303,18 +310,15 @@ where
 
         self.safeguard(op);
 
-    //    // Storing for Powell regularisation step
+        //    // Storing for Powell regularisation step
         self.g_prev = self.g0.clone();
         self.g0 = self.x0.sub(&self.fx0);
 
         self.regularise();
         let res = op.update(&self.x1).unwrap().sub(&self.x1);
         self.iter += 1;
-        
-        Ok(IterData::new()
-            .cost(res.norm())
-            .param(self.x1.clone())
-        )
+
+        Ok(IterData::new().cost(res.norm()).param(self.x1.clone()))
     }
 
     fn terminate(&mut self, state: &State<P>) -> Result<TerminationReason> {
@@ -327,5 +331,4 @@ where
         };
         Ok(condition)
     }
-
- }
+}
