@@ -9,6 +9,7 @@ license = "MIT"
 readme = "README.md"
 categories = ["science"]
 keywords = ["optimization", "math", "physics", "science"]
+exclude = ["/.github"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
