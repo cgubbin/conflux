@@ -96,16 +96,16 @@ where
             dim: dimension,
             tol: tolerance,
             regularisation: F::from_f64(1.).unwrap(),
-            relaxation: F::from_f64(1e-6).unwrap(),
-            safeguard_factor: F::from_f64(0.1).unwrap(),
+            relaxation: F::from_f64(1.).unwrap(),
+            safeguard_factor: F::from_f64(1e6).unwrap(),
             iter: 0,
             m: 0,
             max_iter: max_iter,
             beta: F::from_f64(1.).unwrap(),
             memory: 5,
-            theta_bar: F::from_f64(1.).unwrap(),
-            epsilon: F::from_f64(1e-4).unwrap(),
-            tau: F::from_f64(1e-4).unwrap(),
+            theta_bar: F::from_f64(1e-2).unwrap(),
+            epsilon: F::from_f64(1e-6).unwrap(),
+            tau: F::from_f64(1e-3).unwrap(),
             h_matrix: P::Square::eye(dimension),
             hv1: P::Square::zeros(0),
             hv2: P::Square::zeros(0),
@@ -169,19 +169,15 @@ where
         if self.hv1.is_empty() | self.hv2.is_empty() {
             input.clone()
         } else {
-            let tmp = self.hv1.dot(input);
-            let test = self.hv1.t().dot(&self.hv2);
-            let testb = test.dot(input);
-            let tmp = input
-                .add(&self.hv1.t().dot(&self.hv2.dot(&self.g0)));
-            tmp.clone()
+            input
+                .add(&self.hv1.t().dot(&self.hv2.dot(input)))
         }
     }
 
     fn safeguard(&mut self, op: &P) {
         let Ubar0 = self.g0.norm();
-        let factor = F::from_u64(self.n_anderson + 1).unwrap().powf(self.epsilon);
-        if (self.iter == 1) | (Ubar0 <= self.Ubar * self.safeguard_factor * factor) {
+        let factor = self.Ubar * self.safeguard_factor * F::from_u64(self.n_anderson + 1).unwrap().powf(self.epsilon);
+        if (self.iter == 0) | (Ubar0 <= factor) {
             self.n_anderson += 1;
             self.x0 = self.x1.clone();
             self.fx0 = self.fx1.clone();
@@ -272,7 +268,8 @@ where
         + FPDiv<P::Float, P::Param>
         + FPTranspose
         + FPDot<P::Square, P::Param> + FPDot<P::Param, P::Float>
-        + FPInto2D<P::Square>,
+        + FPInto2D<P::Square>
+        + std::fmt::Debug,
     P::Square: FPEye
         + FPFromZeros
         + FPEmpty
@@ -306,16 +303,17 @@ where
 
         self.safeguard(op);
 
-        // Storing for Powell regularisation step
+    //    // Storing for Powell regularisation step
         self.g_prev = self.g0.clone();
         self.g0 = self.x0.sub(&self.fx0);
 
         self.regularise();
         let res = op.update(&self.x1).unwrap().sub(&self.x1);
+        self.iter += 1;
         
         Ok(IterData::new()
             .cost(res.norm())
-            .param(res)
+            .param(self.x1.clone())
         )
     }
 
