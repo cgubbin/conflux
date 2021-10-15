@@ -1,5 +1,5 @@
-# node - Fixed Point Iterations in Rust
-node is a toolbox for solving fixed point iteration problems, common in computational physics, written in Rust.
+# conflux - Fixed Point Iterations in Rust
+conflux is a toolbox for solving fixed point iteration problems, common in computational physics, written in Rust.
 
 ## Algorithms
 - Linear Mixing
@@ -10,7 +10,7 @@ Simply add the following to your `Cargo.toml`
 
 ```    toml
 [Dependencies]
-node = "0.1.0"
+conflux = "0.1.0"
 ```
 
 ## Todo

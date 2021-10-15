@@ -1,7 +1,7 @@
 [package]
-name = "node"
+name = "conflux"
 authors = ["Christopher Gubbin <c.r.gubbin@soton.ac.uk>"]
-repository = "https://github.com/cgubbin/node"
+repository = "https://github.com/cgubbin/conflux"
 description = "Fixed-point optimization in rust"
 version = "0.1.0"
 edition = "2018"
