@@ -16,7 +16,6 @@ impl<T> FPEmpty for ndarray::Array2<T> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use ndarray::array;
     use paste::item;
 

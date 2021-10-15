@@ -22,8 +22,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use ndarray::{array, Array2};
+    use ndarray::array;
     use paste::item;
 
     macro_rules! make_test {

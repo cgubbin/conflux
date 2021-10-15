@@ -51,7 +51,7 @@ mod tests {
             item! {
                 #[test]
                 fn [<test_zeros_like_ $t>]() {
-                    let t: Array1<$t> = array![];
+                    let t: ndarray::Array1<$t> = ndarray::array![];
                     let a = t.zeros_like();
                     assert_eq!(t, a);
                 }
