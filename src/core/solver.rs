@@ -52,7 +52,7 @@ where
     }
 
     /// Run the fixed point solver
-    pub fn run(&mut self, op: &P) -> Result<FixedPointResult<P>> {
+    pub fn run(&mut self, op: &mut P) -> Result<FixedPointResult<P>> {
         let running = Arc::new(AtomicBool::new(true));
 
         while running.load(Ordering::SeqCst) {

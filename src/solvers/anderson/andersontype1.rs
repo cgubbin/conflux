@@ -158,7 +158,7 @@ where
     }
 
     /// Helper method to initialise for the first iteration
-    fn init(&mut self, op: &P, state: &State<P>) {
+    fn init(&mut self, op: &mut P, state: &State<P>) {
         self.fx0 = op.update(&state.get_param()).expect("Failed to update");
         self.x0 = state.param.clone();
         self.g0 = self.x0.sub(&self.fx0);
@@ -178,7 +178,7 @@ where
     }
 
     /// Safeguarding step
-    fn safeguard(&mut self, op: &P) {
+    fn safeguard(&mut self, op: &mut P) {
         let ubar0 = self.g0.norm();
         let factor = self.ubar
             * self.safeguard_factor
@@ -291,7 +291,7 @@ where
 {
     const NAME: &'static str = "Type-I Anderson Mixing";
 
-    fn next_iter(&mut self, op: &P, state: &State<P>) -> Result<IterData<P>> {
+    fn next_iter(&mut self, op: &mut P, state: &State<P>) -> Result<IterData<P>> {
         if self.iter == 0 {
             self.init(op, state);
         }

@@ -52,7 +52,7 @@ pub trait FixedPointProblem {
     type Square: Clone + Serialize + DeserializeOwned;
 
     /// Carries out the full self-consistent iteration for the problem
-    fn update(&self, _values: &Self::Param) -> Result<Self::Param> {
+    fn update(&mut self, _values: &Self::Param) -> Result<Self::Param> {
         Err(FixedPointError::UnimplementedOperation.into())
     }
 }
@@ -63,7 +63,7 @@ pub trait Mixer<P: FixedPointProblem>: Serialize {
     const NAME: &'static str = "UNDEFINED";
 
     /// Defines a single iteration of the mixing operation
-    fn next_iter(&mut self, op: &P, state: &State<P>) -> Result<IterData<P>>;
+    fn next_iter(&mut self, op: &mut P, state: &State<P>) -> Result<IterData<P>>;
 
     //    /// Initializes the mixing algorithm
     //    fn init(

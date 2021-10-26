@@ -14,12 +14,10 @@ conflux = "0.1.0"
 ```
 
 ## Todo
-------
 - Type-II Anderson Mixing
 - Restarted Pulay Mixing
 - Periodic Pulay Mixing
 
 ## License
-------
 Licensed under an MIT License (http://opensource.org/licenses/MIT)
 

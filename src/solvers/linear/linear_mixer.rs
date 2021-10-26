@@ -47,7 +47,7 @@ where
 {
     const NAME: &'static str = "Linear Mixing";
 
-    fn next_iter(&mut self, op: &P, state: &State<P>) -> Result<IterData<P>> {
+    fn next_iter(&mut self, op: &mut P, state: &State<P>) -> Result<IterData<P>> {
         let param = state.get_param();
         let output = op.update(&param).expect("Failed to update");
         let new_param = output
