@@ -10,6 +10,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Deserialize, Serialize)]
 /// Type 1 Anderson Mixer with stabilisation
+/// 
+/// Reference https://stanford.edu/~boyd/papers/pdf/scs_2.0_v_global.pdf
 pub struct Type1AndersonMixer<F, P: FixedPointProblem> {
     dim: usize,
     tol: F,
