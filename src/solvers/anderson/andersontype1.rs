@@ -182,16 +182,16 @@ where
         let ubar0 = self.g0.norm();
         let factor = self.ubar
             * self.safeguard_factor
-            * F::from_u64(self.n_anderson + 1).unwrap().powf(self.epsilon);
+            * F::from_u64(self.n_anderson + 1).unwrap().powf(- F::from_i64(1).unwrap() - self.epsilon);
         if (self.iter == 0) | (ubar0 <= factor) {
             self.n_anderson += 1;
             self.x0 = self.x1.clone();
             self.fx0 = self.fx1.clone();
         } else {
             self.x1 = self
-                .x0
+                .fx0
                 .mul(&self.beta)
-                .add(&self.fx0.mul(&(F::from_f64(1.).unwrap() - self.beta)));
+                .add(&self.x0.mul(&(F::from_f64(1.).unwrap() - self.beta)));
             self.x0 = self.x1.clone();
             self.fx0 = op.update(&self.x0).expect("Failed to update");
         }
@@ -315,7 +315,7 @@ where
         self.g0 = self.x0.sub(&self.fx0);
 
         self.regularise();
-        let res = op.update(&self.x1).unwrap().sub(&self.x1);
+        let res = self.fx1.sub(&self.x1);
         self.iter += 1;
 
         Ok(IterData::new().cost(res.norm()).param(self.x1.clone()))
