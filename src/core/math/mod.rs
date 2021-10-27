@@ -9,7 +9,9 @@ mod div_ndarray;
 mod dot_ndarray;
 mod empty_ndarray;
 mod eye_ndarray;
+mod holds_nan_ndarray;
 mod into_2d_ndarray;
+mod into_f64;
 mod mul;
 mod mul_ndarray;
 mod norm;
@@ -28,7 +30,9 @@ pub use crate::core::math::div_ndarray::*;
 pub use crate::core::math::dot_ndarray::*;
 pub use crate::core::math::empty_ndarray::*;
 pub use crate::core::math::eye_ndarray::*;
+pub use crate::core::math::holds_nan_ndarray::*;
 pub use crate::core::math::into_2d_ndarray::*;
+pub use crate::core::math::into_f64::*;
 pub use crate::core::math::mul::*;
 pub use crate::core::math::mul_ndarray::*;
 pub use crate::core::math::norm::*;
@@ -76,6 +80,13 @@ pub trait FPMul<X, Y> {
     fn mul(&self, other: &X) -> Y;
 }
 
+/// Converts self to f64 for tracing
+pub trait FPIntof64 {
+    /// Converts self into f64 for tracing
+    fn cast_f64(&self) -> f64;
+}
+
+/// Converts the row vector 'self' into a 2D array
 /// Converts the row vector 'self' into a 2D array
 pub trait FPInto2D<X> {
     /// Converts the row vector 'self' into a 2D array
@@ -106,6 +117,11 @@ pub trait FPNorm<X> {
     fn norm(&self) -> X;
 }
 
+/// Checks whether the quantity holds any nan
+pub trait FPHoldsNaN {
+    /// L2 norm of self
+    fn holds_nan(&self) -> bool;
+}
 /// Generates a zero
 pub trait FPZeros {
     /// Generates a zero

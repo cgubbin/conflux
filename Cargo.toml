@@ -27,6 +27,7 @@ num-complex = "0.4.0"
 paste = "1.0.5"
 serde = { version = "1.0.130", features = ["derive"] }
 thiserror = "1.0.30"
+tracing = "0.1.29"
 
 [badges]
 maintenance = { status = "actively-developed" }

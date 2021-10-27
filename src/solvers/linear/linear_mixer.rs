@@ -42,17 +42,27 @@ where
     P::Param: FPMul<P::Float, P::Param>
         + FPAdd<P::Param, P::Param>
         + FPSub<P::Param, P::Param>
-        + FPNorm<P::Float>,
+        + FPNorm<P::Float>
+        + FPHoldsNaN,
     F: FPFloat,
 {
     const NAME: &'static str = "Linear Mixing";
 
-    fn next_iter(&mut self, op: &mut P, state: &State<P>) -> Result<IterData<P>> {
+    fn next_iter(&mut self, op: &mut P, state: &State<P>) -> Result<IterData<P>, FixedPointError> {
         let param = state.get_param();
-        let output = op.update(&param).expect("Failed to update");
+        let output = match op.update(&param) {
+            Ok(x) => x,
+            Err(_) => return Err(FixedPointError::UpdateFailed),
+        };
         let new_param = output
             .mul(&self.beta)
             .add(&param.mul(&(F::from_f64(1.0).unwrap() - self.beta)));
+
+        match new_param.holds_nan() {
+            true => return Err(FixedPointError::NumericalDivergence),
+            false => (),
+        };
+
         Ok(IterData::new()
             .cost(new_param.sub(&param).norm())
             .param(new_param))

@@ -15,4 +15,4 @@ pub mod prelude;
 
 #[cfg(test)]
 /// Top level testing
-mod tests;
+mod testing;

@@ -63,12 +63,7 @@ pub trait Mixer<P: FixedPointProblem>: Serialize {
     const NAME: &'static str = "UNDEFINED";
 
     /// Defines a single iteration of the mixing operation
-    fn next_iter(&mut self, op: &mut P, state: &State<P>) -> Result<IterData<P>>;
-
-    //    /// Initializes the mixing algorithm
-    //    fn init(
-    //        &mut self
-    //    ) -> Result<O::Output>;
+    fn next_iter(&mut self, op: &mut P, state: &State<P>) -> Result<IterData<P>, FixedPointError>;
 
     /// Checks whether termination conditions are satisfied
     fn terminate(&mut self, state: &State<P>) -> Result<TerminationReason>;

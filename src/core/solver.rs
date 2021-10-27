@@ -1,8 +1,9 @@
-use crate::core::{FixedPointProblem, IterData, Mixer, State};
+use crate::core::{FPIntof64, FixedPointError, FixedPointProblem, IterData, Mixer, State};
 use miette::Result;
 use serde::{Deserialize, Serialize};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use tracing::{debug, span, warn, Level};
 
 #[derive(Clone, Serialize, Deserialize)]
 /// Data type for the solver of a fixed point problem
@@ -40,6 +41,7 @@ impl<P: FixedPointProblem> FixedPointResult<P> {
 impl<P, M> FixedPointSolver<P, M>
 where
     P: FixedPointProblem,
+    P::Float: FPIntof64,
     M: Mixer<P>,
 {
     /// Create a fixed point solver from a Mixer and a starting parameter
@@ -52,7 +54,9 @@ where
     }
 
     /// Run the fixed point solver
-    pub fn run(&mut self, op: &mut P) -> Result<FixedPointResult<P>> {
+    pub fn run(&mut self, op: &mut P) -> Result<FixedPointResult<P>, FixedPointError> {
+        let span = span!(Level::TRACE, "starting fixed point solver...");
+        let _enter = span.enter();
         let running = Arc::new(AtomicBool::new(true));
 
         while running.load(Ordering::SeqCst) {
@@ -67,10 +71,29 @@ where
 
             let output = self.mixer.next_iter(op, &self.state).unwrap();
             self.update(&output);
-            println!("Iter: {}, Cost: {}", self.state.iter, self.state.cost);
+            debug!(
+                iteration = self.state.iter,
+                cost = self.state.cost.cast_f64()
+            );
         }
 
-        Ok(self.generate_result())
+        // See if we hit the maximum iteration number or not
+        match self.state.iter < self.state.max_iters {
+            true => {
+                debug!(
+                    iterations = self.state.iter,
+                    cost = self.state.cost.cast_f64(),
+                    "Fixed point iteration converged"
+                );
+                Ok(self.generate_result())
+            }
+            false => {
+                warn!("Failed to reach required tolerance");
+                Err(FixedPointError::TooManyIterations(
+                    self.state.cost.cast_f64(),
+                ))
+            }
+        }
     }
 
     /// Generates the result from a converged or non-converged solution

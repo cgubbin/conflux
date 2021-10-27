@@ -7,6 +7,7 @@ Reference: https://stanford.edu/~boyd/papers/pdf/scs_2.0_v_global.pdf
 use crate::prelude::*;
 use miette::Result;
 use serde::{Deserialize, Serialize};
+use tracing::debug;
 
 #[derive(Clone, Deserialize, Serialize)]
 /// Type 1 Anderson Mixer with stabilisation
@@ -158,14 +159,18 @@ where
     }
 
     /// Helper method to initialise for the first iteration
-    fn init(&mut self, op: &mut P, state: &State<P>) {
-        self.fx0 = op.update(&state.get_param()).expect("Failed to update");
+    fn init(&mut self, op: &mut P, state: &State<P>) -> Result<(), FixedPointError> {
+        self.fx0 = match op.update(&state.get_param()) {
+            Ok(x) => x,
+            Err(_) => return Err(FixedPointError::UpdateFailed),
+        };
         self.x0 = state.param.clone();
         self.g0 = self.x0.sub(&self.fx0);
         self.ubar = self.g0.norm();
         self.n_anderson = 0;
         self.iter = 0;
         self.m = 0;
+        Ok(())
     }
 
     /// Helper function for common matrix operation
@@ -178,7 +183,7 @@ where
     }
 
     /// Safeguarding step
-    fn safeguard(&mut self, op: &mut P) {
+    fn safeguard(&mut self, op: &mut P) -> Result<(), FixedPointError> {
         let ubar0 = self.g0.norm();
         let factor = self.ubar
             * self.safeguard_factor
@@ -186,17 +191,23 @@ where
                 .unwrap()
                 .powf(-F::from_i64(1).unwrap() - self.epsilon);
         if (self.iter == 0) | (ubar0 <= factor) {
+            debug!(iteration = self.iter, "Taking Anderson Step");
             self.n_anderson += 1;
             self.x0 = self.x1.clone();
             self.fx0 = self.fx1.clone();
         } else {
+            debug!(iteration = self.iter, "Taking Linear Step");
             self.x1 = self
                 .fx0
                 .mul(&self.beta)
                 .add(&self.x0.mul(&(F::from_f64(1.).unwrap() - self.beta)));
             self.x0 = self.x1.clone();
-            self.fx0 = op.update(&self.x0).expect("Failed to update");
+            self.fx0 = match op.update(&self.x0) {
+                Ok(x) => x,
+                Err(_) => return Err(FixedPointError::UpdateFailed),
+            }
         }
+        Ok(())
     }
 
     /// Powell regularisation step
@@ -206,7 +217,7 @@ where
                 self.s0
                     .sub(&(self.s_hat_memory.dot(&self.s0).t().dot(&self.s_hat_memory)).t())
             } else {
-                println!("iter={}, no orthogonalisation", self.iter);
+                debug!(iteration = self.iter, "No orthogonalisation");
                 self.s0.clone()
             };
             if self.s0_hat.norm() < self.tau * self.s0.norm() {
@@ -280,7 +291,8 @@ where
         + FPDot<P::Square, P::Param>
         + FPDot<P::Param, P::Float>
         + FPInto2D<P::Square>
-        + std::fmt::Debug,
+        + std::fmt::Debug
+        + FPHoldsNaN,
     P::Square: FPEye
         + FPFromZeros
         + FPEmpty
@@ -293,9 +305,12 @@ where
 {
     const NAME: &'static str = "Type-I Anderson Mixing";
 
-    fn next_iter(&mut self, op: &mut P, state: &State<P>) -> Result<IterData<P>> {
+    fn next_iter(&mut self, op: &mut P, state: &State<P>) -> Result<IterData<P>, FixedPointError> {
         if self.iter == 0 {
-            self.init(op, state);
+            match self.init(op, state) {
+                Ok(_) => (),
+                Err(e) => return Err(e),
+            }
         }
 
         self.m += 1;
@@ -306,19 +321,30 @@ where
         }
 
         self.s0 = self.x1.sub(&self.x0);
-        self.fx1 = op.update(&self.x1).expect("Failed to update");
+        self.fx1 = match op.update(&self.x1) {
+            Ok(x) => x,
+            Err(_) => return Err(FixedPointError::UpdateFailed),
+        };
         self.g1 = self.x1.sub(&self.fx1);
         self.y0 = self.g1.sub(&self.g0);
 
-        self.safeguard(op);
+        match self.safeguard(op) {
+            Ok(_) => (),
+            Err(e) => return Err(e),
+        };
 
-        //    // Storing for Powell regularisation step
+        // Storing for Powell regularisation step
         self.g_prev = self.g0.clone();
         self.g0 = self.x0.sub(&self.fx0);
 
         self.regularise();
         let res = self.fx1.sub(&self.x1);
         self.iter += 1;
+
+        match self.x1.holds_nan() {
+            true => return Err(FixedPointError::NumericalDivergence),
+            false => (),
+        };
 
         Ok(IterData::new().cost(res.norm()).param(self.x1.clone()))
     }
