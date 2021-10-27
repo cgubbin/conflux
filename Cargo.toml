@@ -4,12 +4,17 @@ authors = ["Christopher Gubbin <c.r.gubbin@soton.ac.uk>"]
 repository = "https://github.com/cgubbin/conflux"
 description = "Fixed-point optimization in rust"
 version = "0.1.1"
-edition = "2018"
+edition = "2021"
 license = "MIT"
 readme = "README.md"
 categories = ["science"]
 keywords = ["optimization", "math", "physics", "science"]
 exclude = ["/.github"]
+
+[profile.release]
+debug = 1
+incremental = true
+lto = "off"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

@@ -1,7 +1,7 @@
 /*!
 Type 1 Anderson Mixer
 
-Reference:
+Reference: https://stanford.edu/~boyd/papers/pdf/scs_2.0_v_global.pdf
 */
 
 use crate::prelude::*;
@@ -10,8 +10,6 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Deserialize, Serialize)]
 /// Type 1 Anderson Mixer with stabilisation
-/// 
-/// Reference https://stanford.edu/~boyd/papers/pdf/scs_2.0_v_global.pdf
 pub struct Type1AndersonMixer<F, P: FixedPointProblem> {
     dim: usize,
     tol: F,
@@ -184,7 +182,9 @@ where
         let ubar0 = self.g0.norm();
         let factor = self.ubar
             * self.safeguard_factor
-            * F::from_u64(self.n_anderson + 1).unwrap().powf(- F::from_i64(1).unwrap() - self.epsilon);
+            * F::from_u64(self.n_anderson + 1)
+                .unwrap()
+                .powf(-F::from_i64(1).unwrap() - self.epsilon);
         if (self.iter == 0) | (ubar0 <= factor) {
             self.n_anderson += 1;
             self.x0 = self.x1.clone();
