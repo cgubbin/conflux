@@ -2,33 +2,44 @@ use crate::core::math::{FPFromZeros, FPZerosLike};
 
 use num_traits::Zero;
 
-use nalgebra::{
-    base::{allocator::Allocator, dimension::Dim},
-    DefaultAllocator, OMatrix, Scalar,
-};
+use nalgebra::{DMatrix, DVector, Scalar};
 
-impl<N, R, C> FPZerosLike for OMatrix<N, R, C>
+impl<N> FPZerosLike for DVector<N>
 where
     N: Scalar + Zero,
-    R: Dim,
-    C: Dim,
-    DefaultAllocator: Allocator<N, R, C>,
 {
     #[inline]
-    fn zeros_like(&self) -> OMatrix<N, R, C> {
-        Self::zeros_generic(R::from_usize(self.nrows()), C::from_usize(self.ncols()))
+    fn zeros_like(&self) -> DVector<N> {
+        Self::zeros(self.nrows())
     }
 }
 
-impl<N, R, C> FPFromZeros for OMatrix<N, R, C>
+impl<N> FPZerosLike for DMatrix<N>
 where
     N: Scalar + Zero,
-    R: Dim,
-    C: Dim,
-    DefaultAllocator: Allocator<N, R, C>,
 {
     #[inline]
-    fn zeros(dim: usize) -> OMatrix<N, R, C> {
-        Self::zeros_generic(R::from_usize(dim), C::from_usize(dim))
+    fn zeros_like(&self) -> DMatrix<N> {
+        Self::zeros(self.nrows(), self.ncols())
+    }
+}
+
+impl<N> FPFromZeros for DVector<N>
+where
+    N: Scalar + Zero,
+{
+    #[inline]
+    fn zeros(dim: usize) -> DVector<N> {
+        Self::zeros(dim)
+    }
+}
+
+impl<N> FPFromZeros for DMatrix<N>
+where
+    N: Scalar + Zero,
+{
+    #[inline]
+    fn zeros(dim: usize) -> DMatrix<N> {
+        Self::zeros(dim, dim)
     }
 }

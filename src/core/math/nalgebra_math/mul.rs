@@ -1,59 +1,53 @@
 use crate::core::math::FPMul;
 
-use nalgebra::{
-    base::{
-        allocator::{Allocator, SameShapeAllocator},
-        constraint::{SameNumberOfColumns, SameNumberOfRows, ShapeConstraint},
-        dimension::Dim,
-        storage::Storage,
-        MatrixSum, Scalar,
-    },
-    ClosedMul, DefaultAllocator, Matrix, OMatrix,
-};
+use nalgebra::{base::Scalar, ClosedMul, DMatrix, DVector};
 
-impl<N, R, C, S> FPMul<N, OMatrix<N, R, C>> for Matrix<N, R, C, S>
+impl<N> FPMul<N, DVector<N>> for DVector<N>
 where
     N: Scalar + Copy + ClosedMul,
-    R: Dim,
-    C: Dim,
-    S: Storage<N, R, C>,
-    DefaultAllocator: Allocator<N, R, C>,
 {
     #[inline]
-    fn mul(&self, other: &N) -> OMatrix<N, R, C> {
+    fn mul(&self, other: &N) -> DVector<N> {
         self * *other
     }
 }
 
-impl<N, R, C, S> FPMul<Matrix<N, R, C, S>, OMatrix<N, R, C>> for N
+impl<N> FPMul<N, DMatrix<N>> for DMatrix<N>
 where
     N: Scalar + Copy + ClosedMul,
-    R: Dim,
-    C: Dim,
-    S: Storage<N, R, C>,
-    DefaultAllocator: Allocator<N, R, C>,
 {
     #[inline]
-    fn mul(&self, other: &Matrix<N, R, C, S>) -> OMatrix<N, R, C> {
+    fn mul(&self, other: &N) -> DMatrix<N> {
+        self * *other
+    }
+}
+
+impl<N> FPMul<DMatrix<N>, DMatrix<N>> for N
+where
+    N: Scalar + Copy + ClosedMul,
+{
+    #[inline]
+    fn mul(&self, other: &DMatrix<N>) -> DMatrix<N> {
         other * *self
     }
 }
 
-impl<N, R1, R2, C1, C2, SA, SB> FPMul<Matrix<N, R2, C2, SB>, MatrixSum<N, R1, C1, R2, C2>>
-    for Matrix<N, R1, C1, SA>
+impl<N> FPMul<DVector<N>, DVector<N>> for N
 where
-    N: Scalar + ClosedMul,
-    R1: Dim,
-    R2: Dim,
-    C1: Dim,
-    C2: Dim,
-    SA: Storage<N, R1, C1>,
-    SB: Storage<N, R2, C2>,
-    DefaultAllocator: SameShapeAllocator<N, R1, C1, R2, C2>,
-    ShapeConstraint: SameNumberOfRows<R1, R2> + SameNumberOfColumns<C1, C2>,
+    N: Scalar + Copy + ClosedMul,
 {
     #[inline]
-    fn mul(&self, other: &Matrix<N, R2, C2, SB>) -> MatrixSum<N, R1, C1, R2, C2> {
+    fn mul(&self, other: &DVector<N>) -> DVector<N> {
+        other * *self
+    }
+}
+
+impl<N> FPMul<DMatrix<N>, DMatrix<N>> for DMatrix<N>
+where
+    N: Scalar + ClosedMul,
+{
+    #[inline]
+    fn mul(&self, other: &DMatrix<N>) -> DMatrix<N> {
         self.component_mul(other)
     }
 }

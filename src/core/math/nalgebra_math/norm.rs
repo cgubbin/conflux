@@ -7,17 +7,21 @@
 
 use crate::core::math::FPNorm;
 
-use nalgebra::{
-    base::{dimension::Dim, storage::Storage},
-    Matrix, SimdComplexField,
-};
+use nalgebra::{DMatrix, DVector, SimdComplexField};
 
-impl<N, R, C, S> FPNorm<N::SimdRealField> for Matrix<N, R, C, S>
+impl<N> FPNorm<N::SimdRealField> for DVector<N>
 where
     N: SimdComplexField,
-    R: Dim,
-    C: Dim,
-    S: Storage<N, R, C>,
+{
+    #[inline]
+    fn norm(&self) -> N::SimdRealField {
+        self.norm()
+    }
+}
+
+impl<N> FPNorm<N::SimdRealField> for DMatrix<N>
+where
+    N: SimdComplexField,
 {
     #[inline]
     fn norm(&self) -> N::SimdRealField {

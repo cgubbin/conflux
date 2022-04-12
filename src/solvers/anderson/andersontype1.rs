@@ -217,10 +217,13 @@ where
     /// Powell regularisation step
     fn regularise(&mut self) {
         if self.m <= self.memory {
+            println!("here");
             self.s0_hat = if !self.s_hat_memory.is_empty() {
+                println!("here");
                 self.s0
                     .sub(&(self.s_hat_memory.dot(&self.s0).t().dot(&self.s_hat_memory)).t())
             } else {
+                println!("here other");
                 debug!(iteration = self.iter, "No orthogonalisation");
                 self.s0.clone()
             };
@@ -345,7 +348,9 @@ where
         self.g_prev = self.g0.clone();
         self.g0 = self.x0.sub(&self.fx0);
 
+        dbg!(self.iter);
         self.regularise();
+        dbg!(self.iter);
         let res = self.fx1.sub(&self.x1);
         self.iter += 1;
 

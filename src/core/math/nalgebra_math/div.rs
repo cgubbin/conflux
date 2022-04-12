@@ -1,53 +1,62 @@
 use crate::core::math::FPDiv;
-use nalgebra::{
-    allocator::{Allocator, SameShapeAllocator},
-    constraint::{SameNumberOfColumns, SameNumberOfRows, ShapeConstraint},
-    ClosedDiv, DefaultAllocator, Dim, Matrix, MatrixSum, OMatrix, Scalar, Storage,
-};
+use nalgebra::{ClosedDiv, DMatrix, DVector, Scalar};
 
-impl<N, R, C, S> FPDiv<N, OMatrix<N, R, C>> for Matrix<N, R, C, S>
+impl<N> FPDiv<N, DMatrix<N>> for DMatrix<N>
 where
     N: Scalar + ClosedDiv + Copy,
-    R: Dim,
-    C: Dim,
-    S: Storage<N, R, C>,
-    DefaultAllocator: Allocator<N, R, C>,
 {
     #[inline]
-    fn div(&self, other: &N) -> OMatrix<N, R, C> {
+    fn div(&self, other: &N) -> DMatrix<N> {
         self / *other
     }
 }
 
-impl<N, R, C, S> FPDiv<Matrix<N, R, C, S>, OMatrix<N, R, C>> for N
+impl<N> FPDiv<DMatrix<N>, DMatrix<N>> for N
 where
     N: Scalar + ClosedDiv + Copy,
-    R: Dim,
-    C: Dim,
-    S: Storage<N, R, C>,
-    DefaultAllocator: Allocator<N, R, C>,
 {
     #[inline]
-    fn div(&self, other: &Matrix<N, R, C, S>) -> OMatrix<N, R, C> {
+    fn div(&self, other: &DMatrix<N>) -> DMatrix<N> {
         other.map(|entry| *self / entry)
     }
 }
 
-impl<N, R1, C1, R2, C2, S1, S2> FPDiv<Matrix<N, R2, C2, S2>, MatrixSum<N, R1, C1, R2, C2>>
-    for Matrix<N, R1, C1, S1>
+impl<N> FPDiv<DMatrix<N>, DMatrix<N>> for DMatrix<N>
 where
     N: Scalar + ClosedDiv,
-    R1: Dim,
-    C1: Dim,
-    R2: Dim,
-    C2: Dim,
-    S1: Storage<N, R1, C1>,
-    S2: Storage<N, R2, C2>,
-    DefaultAllocator: SameShapeAllocator<N, R1, C1, R2, C2>,
-    ShapeConstraint: SameNumberOfColumns<C1, C2> + SameNumberOfRows<R1, R2>,
 {
     #[inline]
-    fn div(&self, other: &Matrix<N, R2, C2, S2>) -> MatrixSum<N, R1, C1, R2, C2> {
+    fn div(&self, other: &DMatrix<N>) -> DMatrix<N> {
+        self.component_div(other)
+    }
+}
+
+impl<N> FPDiv<N, DVector<N>> for DVector<N>
+where
+    N: Scalar + ClosedDiv + Copy,
+{
+    #[inline]
+    fn div(&self, other: &N) -> DVector<N> {
+        self / *other
+    }
+}
+
+impl<N> FPDiv<DVector<N>, DVector<N>> for N
+where
+    N: Scalar + ClosedDiv + Copy,
+{
+    #[inline]
+    fn div(&self, other: &DVector<N>) -> DVector<N> {
+        other.map(|entry| *self / entry)
+    }
+}
+
+impl<N> FPDiv<DVector<N>, DVector<N>> for DVector<N>
+where
+    N: Scalar + ClosedDiv,
+{
+    #[inline]
+    fn div(&self, other: &DVector<N>) -> DVector<N> {
         self.component_div(other)
     }
 }
@@ -55,7 +64,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use nalgebra::{DMatrix, DVector, Matrix2x3, Vector3};
+    use nalgebra::{DMatrix, DVector};
     use paste::item;
 
     macro_rules! make_test {
@@ -63,10 +72,10 @@ mod tests {
             item! {
                 #[test]
                 fn [<test_div_vec_scalar_ $t>]() {
-                    let a = Vector3::new(4 as $t, 16 as $t, 8 as $t);
+                    let a = DVector::from(vec![4 as $t, 16 as $t, 8 as $t]);
                     let b = 2 as $t;
-                    let target = Vector3::new(2 as $t, 8 as $t, 4 as $t);
-                    let res = <Vector3<$t> as FPDiv<$t, Vector3<$t>>>::div(&a, &b);
+                    let target = DVector::from(vec![2 as $t, 8 as $t, 4 as $t]);
+                    let res = <DVector<$t> as FPDiv<$t, DVector<$t>>>::div(&a, &b);
                     for i in 0..3 {
                         assert!(((target[i] - res[i]) as f64).abs() < std::f64::EPSILON);
                     }
@@ -76,10 +85,10 @@ mod tests {
             item! {
                 #[test]
                 fn [<test_div_scalar_vec_ $t>]() {
-                    let a = Vector3::new(2 as $t, 4 as $t, 8 as $t);
+                    let a = DVector::from(vec![2 as $t, 4 as $t, 8 as $t]);
                     let b = 32 as $t;
-                    let target = Vector3::new(16 as $t, 8 as $t, 4 as $t);
-                    let res = <$t as FPDiv<Vector3<$t>, Vector3<$t>>>::div(&b, &a);
+                    let target = DVector::from(vec![16 as $t, 8 as $t, 4 as $t]);
+                    let res = <$t as FPDiv<DVector<$t>, DVector<$t>>>::div(&b, &a);
                     for i in 0..3 {
                         assert!(((target[i] - res[i]) as f64).abs() < std::f64::EPSILON);
                     }
@@ -89,10 +98,10 @@ mod tests {
             item! {
                 #[test]
                 fn [<test_div_vec_vec_ $t>]() {
-                    let a = Vector3::new(4 as $t, 9 as $t, 8 as $t);
-                    let b = Vector3::new(2 as $t, 3 as $t, 4 as $t);
-                    let target = Vector3::new(2 as $t, 3 as $t, 2 as $t);
-                    let res = <Vector3<$t> as FPDiv<Vector3<$t>, Vector3<$t>>>::div(&a, &b);
+                    let a = DVector::from(vec![4 as $t, 9 as $t, 8 as $t]);
+                    let b = DVector::from(vec![2 as $t, 3 as $t, 4 as $t]);
+                    let target = DVector::from(vec![2 as $t, 3 as $t, 2 as $t]);
+                    let res = <DVector<$t> as FPDiv<DVector<$t>, DVector<$t>>>::div(&a, &b);
                     for i in 0..3 {
                         assert!(((target[i] - res[i]) as f64).abs() < std::f64::EPSILON);
                     }
@@ -132,19 +141,19 @@ mod tests {
             item! {
                 #[test]
                 fn [<test_div_mat_mat_ $t>]() {
-                    let a = Matrix2x3::new(
+                    let a = DMatrix::from_iterator(2, 3, vec![
                         4 as $t, 12 as $t, 8 as $t,
                         9 as $t, 20 as $t, 45 as $t
-                    );
-                    let b = Matrix2x3::new(
+                    ].into_iter());
+                    let b = DMatrix::from_iterator(2, 3, vec![
                         2 as $t, 3 as $t, 4 as $t,
                         3 as $t, 4 as $t, 5 as $t
-                    );
-                    let target = Matrix2x3::new(
+                    ].into_iter());
+                    let target = DMatrix::from_iterator(2, 3, vec![
                         2 as $t, 4 as $t, 2 as $t,
                         3 as $t, 5 as $t, 9 as $t
-                    );
-                    let res = <Matrix2x3<$t> as FPDiv<Matrix2x3<$t>, Matrix2x3<$t>>>::div(&a, &b);
+                    ].into_iter());
+                    let res = <DMatrix<$t> as FPDiv<DMatrix<$t>, DMatrix<$t>>>::div(&a, &b);
                     for i in 0..3 {
                         for j in 0..2 {
                         assert!(((target[(j, i)] - res[(j, i)]) as f64).abs() < std::f64::EPSILON);

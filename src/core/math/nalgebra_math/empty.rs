@@ -1,14 +1,15 @@
 use crate::core::math::FPEmpty;
 
-use nalgebra::{allocator::Allocator, dimension::Dim, DefaultAllocator, OMatrix};
+use nalgebra::{DMatrix, DVector};
 
-impl<N, R, C> FPEmpty for OMatrix<N, R, C>
-where
-    R: Dim,
-    C: Dim,
-    DefaultAllocator: Allocator<N, R, C>,
-{
+impl<N> FPEmpty for DVector<N> {
     fn is_empty(&self) -> bool {
-        self.is_empty()
+        (self.nrows() == 0) & (self.ncols() == 0)
+    }
+}
+
+impl<N> FPEmpty for DMatrix<N> {
+    fn is_empty(&self) -> bool {
+        (self.nrows() == 0) & (self.ncols() == 0)
     }
 }

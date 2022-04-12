@@ -2,49 +2,64 @@ use std::ops::Sub;
 
 use crate::core::math::FPSub;
 
-use nalgebra::{
-    base::{allocator::Allocator, dimension::Dim, storage::Storage, Scalar},
-    ClosedSub, DefaultAllocator, Matrix, OMatrix,
-};
+use nalgebra::{base::Scalar, ClosedSub, DMatrix, DVector};
 
-impl<N, R, C, S> FPSub<N, OMatrix<N, R, C>> for Matrix<N, R, C, S>
+impl<N> FPSub<N, DVector<N>> for DVector<N>
 where
     N: Scalar + Copy + Sub<Output = N>,
-    R: Dim,
-    C: Dim,
-    S: Storage<N, R, C>,
-    DefaultAllocator: Allocator<N, R, C>,
 {
     #[inline]
-    fn sub(&self, other: &N) -> OMatrix<N, R, C> {
+    fn sub(&self, other: &N) -> DVector<N> {
         self.map(|entry| entry - *other)
     }
 }
 
-impl<N, R, C, S> FPSub<Matrix<N, R, C, S>, OMatrix<N, R, C>> for N
+impl<N> FPSub<N, DMatrix<N>> for DMatrix<N>
 where
     N: Scalar + Copy + Sub<Output = N>,
-    R: Dim,
-    C: Dim,
-    S: Storage<N, R, C>,
-    DefaultAllocator: Allocator<N, R, C>,
 {
     #[inline]
-    fn sub(&self, other: &Matrix<N, R, C, S>) -> OMatrix<N, R, C> {
+    fn sub(&self, other: &N) -> DMatrix<N> {
+        self.map(|entry| entry - *other)
+    }
+}
+
+impl<N> FPSub<DVector<N>, DVector<N>> for N
+where
+    N: Scalar + Copy + Sub<Output = N>,
+{
+    #[inline]
+    fn sub(&self, other: &DVector<N>) -> DVector<N> {
         other.map(|entry| *self - entry)
     }
 }
 
-impl<N, R, C, S> FPSub<Matrix<N, R, C, S>, OMatrix<N, R, C>> for Matrix<N, R, C, S>
+impl<N> FPSub<DMatrix<N>, DMatrix<N>> for N
 where
-    N: Scalar + ClosedSub,
-    R: Dim,
-    C: Dim,
-    S: Storage<N, R, C>,
-    DefaultAllocator: Allocator<N, R, C>,
+    N: Scalar + Copy + Sub<Output = N>,
 {
     #[inline]
-    fn sub(&self, other: &Matrix<N, R, C, S>) -> OMatrix<N, R, C> {
+    fn sub(&self, other: &DMatrix<N>) -> DMatrix<N> {
+        other.map(|entry| *self - entry)
+    }
+}
+
+impl<N> FPSub<DVector<N>, DVector<N>> for DVector<N>
+where
+    N: Scalar + ClosedSub,
+{
+    #[inline]
+    fn sub(&self, other: &DVector<N>) -> DVector<N> {
+        self - other
+    }
+}
+
+impl<N> FPSub<DMatrix<N>, DMatrix<N>> for DMatrix<N>
+where
+    N: Scalar + ClosedSub,
+{
+    #[inline]
+    fn sub(&self, other: &DMatrix<N>) -> DMatrix<N> {
         self - other
     }
 }
