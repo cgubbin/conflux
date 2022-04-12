@@ -13,6 +13,6 @@ pub mod solvers;
 /// Everything our users need
 pub mod prelude;
 
-#[cfg(test)]
-/// Top level testing
-mod testing;
+// #[cfg(test)]
+// Top level testing
+// mod testing;

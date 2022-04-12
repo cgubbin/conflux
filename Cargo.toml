@@ -21,9 +21,11 @@ lto = "off"
 [dependencies]
 instant = "0.1.11"
 miette = { version = "3.2.0", features = ["fancy"] }
-ndarray = { version = "0.15.3", features =["serde"] }
+nalgebra = { version = "0.29.0", features = ["serde-serialize"], optional = true }
+ndarray = { version = "0.15.3", features =["serde"], optional = true  }
 num = "0.4.0"
 num-complex = "0.4.0"
+num-traits = "0.2.14"
 paste = "1.0.5"
 serde = { version = "1.0.130", features = ["derive"] }
 thiserror = "1.0.30"
@@ -31,3 +33,9 @@ tracing = "0.1.29"
 
 [badges]
 maintenance = { status = "actively-developed" }
+
+[features]
+default = ["ndarray", "nalgebra"]
+
+[dev-dependencies]
+rand = "0.8.5"

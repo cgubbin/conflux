@@ -10,7 +10,6 @@ mod math;
 mod solver;
 mod state;
 
-use miette::Result;
 use num::traits::{Float, FloatConst, FromPrimitive, ToPrimitive};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -43,28 +42,39 @@ impl<I> FPFloat for I where
 /// The update method should carry out a full self-consistent iteration
 pub trait FixedPointProblem {
     /// The type of the output returned by the fixed point iteration
-    type Output: Clone + Serialize + DeserializeOwned;
+    type Output: Clone; // + Serialize; // + DeserializeOwned;
     /// The type of the input required by the fixed point iteration
-    type Param: Clone + Serialize + DeserializeOwned;
+    type Param: Clone; // + Serialize; // + DeserializeOwned;
     /// Floating point precision
     type Float: FPFloat;
     /// Type for square matrices
-    type Square: Clone + Serialize + DeserializeOwned;
+    type Square: Clone; // + Serialize; // + DeserializeOwned;
 
     /// Carries out the full self-consistent iteration for the problem
-    fn update(&mut self, _values: &Self::Param) -> Result<Self::Param> {
-        Err(FixedPointError::UnimplementedOperation.into())
+    fn update(
+        &mut self,
+        _values: &Self::Param,
+    ) -> Result<Self::Param, FixedPointError<Self::Float>> {
+        Err(FixedPointError::UnimplementedOperation)
     }
 }
 
 /// This trait defines the mixer operation. All mixers implement the trait
-pub trait Mixer<P: FixedPointProblem>: Serialize {
+pub trait MixerMethods<Problem: FixedPointProblem> {
+    //: Serialize {
     /// The name of the mixing algorithm
     const NAME: &'static str = "UNDEFINED";
 
     /// Defines a single iteration of the mixing operation
-    fn next_iter(&mut self, op: &mut P, state: &State<P>) -> Result<IterData<P>, FixedPointError>;
+    fn next_iter(
+        &mut self,
+        op: &mut Problem,
+        state: &State<Problem>,
+    ) -> Result<IterData<Problem>, FixedPointError<Problem::Float>>;
 
     /// Checks whether termination conditions are satisfied
-    fn terminate(&mut self, state: &State<P>) -> Result<TerminationReason>;
+    fn terminate(
+        &mut self,
+        state: &State<Problem>,
+    ) -> Result<TerminationReason, FixedPointError<Problem::Float>>;
 }

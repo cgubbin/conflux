@@ -2,47 +2,10 @@
 This module contains overloaded mathematics operators to allow the mixing algorithms to
 operate with generic math libraries
 */
-mod add;
-mod add_ndarray;
-mod div;
-mod div_ndarray;
-mod dot_ndarray;
-mod empty_ndarray;
-mod eye_ndarray;
-mod holds_nan_ndarray;
-mod into_2d_ndarray;
-mod into_f64;
-mod mul;
-mod mul_ndarray;
-mod norm;
-mod norm_ndarray;
-mod stack_ndarray;
-mod sub;
-mod sub_ndarray;
-mod transpose_ndarray;
-mod zeros;
-mod zeros_ndarray;
-
-pub use crate::core::math::add::*;
-pub use crate::core::math::add_ndarray::*;
-pub use crate::core::math::div::*;
-pub use crate::core::math::div_ndarray::*;
-pub use crate::core::math::dot_ndarray::*;
-pub use crate::core::math::empty_ndarray::*;
-pub use crate::core::math::eye_ndarray::*;
-pub use crate::core::math::holds_nan_ndarray::*;
-pub use crate::core::math::into_2d_ndarray::*;
-pub use crate::core::math::into_f64::*;
-pub use crate::core::math::mul::*;
-pub use crate::core::math::mul_ndarray::*;
-pub use crate::core::math::norm::*;
-pub use crate::core::math::norm_ndarray::*;
-pub use crate::core::math::stack_ndarray::*;
-pub use crate::core::math::sub::*;
-pub use crate::core::math::sub_ndarray::*;
-pub use crate::core::math::transpose_ndarray::*;
-pub use crate::core::math::zeros::*;
-pub use crate::core::math::zeros_ndarray::*;
+#[cfg(feature = "nalgebra")]
+mod nalgebra_math;
+#[cfg(feature = "ndarray")]
+mod ndarray_math;
 
 /// Add 'X' to 'self'
 pub trait FPAdd<X, Y> {
@@ -51,9 +14,9 @@ pub trait FPAdd<X, Y> {
 }
 
 /// Stacks the vector 'X' under 'self'
-pub trait FPStack<X> {
+pub trait FPStack<X, Y> {
     /// Stacks the vector 'X' under 'self'
-    fn stack(&self, other: &X) -> Self;
+    fn stack(&self, other: &X) -> Y;
 }
 
 /// Checks whether 'self' is empty
@@ -106,9 +69,9 @@ pub trait FPDot<X, Y> {
 }
 
 /// Transpose of 'self'
-pub trait FPTranspose {
+pub trait FPTranspose<X> {
     /// Generate the transpose of self
-    fn t(&self) -> Self;
+    fn t(&self) -> X;
 }
 
 /// L2 norm of self

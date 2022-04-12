@@ -5,149 +5,149 @@ Reference: https://stanford.edu/~boyd/papers/pdf/scs_2.0_v_global.pdf
 */
 
 use crate::prelude::*;
-use miette::Result;
 use serde::{Deserialize, Serialize};
 use tracing::debug;
 
 #[derive(Clone, Deserialize, Serialize)]
 /// Type 1 Anderson Mixer with stabilisation
-pub struct Type1AndersonMixer<F, P: FixedPointProblem> {
+pub struct Type1AndersonMixer<T, Problem: FixedPointProblem> {
     dim: usize,
-    tol: F,
-    regularisation: F,
-    safeguard_factor: F,
+    tol: T,
+    regularisation: T,
+    safeguard_factor: T,
     iter: u64,
     m: u64,
     max_iter: u64,
-    beta: F,
-    epsilon: F,
-    tau: F,
+    beta: T,
+    epsilon: T,
+    tau: T,
     memory: u64,
-    theta_bar: F,
+    theta_bar: T,
 
     /// Internal data
-    h_matrix: P::Square,
-    hv1: P::Square,
-    hv2: P::Square,
-    sk_hat: P::Param,
-    s: P::Param,
-    fx0: P::Param,
-    x0: P::Param,
-    y0: P::Param,
-    g0: P::Param,
-    s0: P::Param,
-    fx1: P::Param,
-    x1: P::Param,
-    g1: P::Param,
-    g_prev: P::Param,
-    s1: P::Param,
-    s0_hat: P::Param,
-    s_history: P::Square,
-    s_hat_memory: P::Square,
-    y_tilde: P::Param,
-    ubar: F,
+    h_matrix: Problem::Square,
+    hv1: Problem::Square,
+    hv2: Problem::Square,
+    sk_hat: Problem::Param,
+    s: Problem::Param,
+    fx0: Problem::Param,
+    x0: Problem::Param,
+    y0: Problem::Param,
+    g0: Problem::Param,
+    s0: Problem::Param,
+    fx1: Problem::Param,
+    x1: Problem::Param,
+    g1: Problem::Param,
+    g_prev: Problem::Param,
+    s1: Problem::Param,
+    s0_hat: Problem::Param,
+    s_history: Problem::Square,
+    s_hat_memory: Problem::Square,
+    y_tilde: Problem::Param,
+    ubar: T,
     n_anderson: u64,
 }
 
-impl<F: FPFloat, P: FixedPointProblem<Float = F>> std::default::Default for Type1AndersonMixer<F, P>
+impl<T: FPFloat, Problem: FixedPointProblem<Float = T>> std::default::Default
+    for Type1AndersonMixer<T, Problem>
 where
-    P::Param: FPFromZeros
-        + FPSub<P::Param, P::Param>
-        + FPNorm<P::Float>
-        + FPMul<P::Float, P::Param>
-        + FPAdd<P::Param, P::Param>
-        + FPDiv<P::Float, P::Param>
-        + FPTranspose
-        + FPDot<P::Param, P::Square>
-        + FPDot<P::Square, P::Param>
-        + FPDot<P::Param, P::Float>
-        + FPInto2D<P::Square>,
-    P::Square: FPEye
+    Problem::Param: FPFromZeros
+        + FPSub<Problem::Param, Problem::Param>
+        + FPNorm<Problem::Float>
+        + FPMul<Problem::Float, Problem::Param>
+        + FPAdd<Problem::Param, Problem::Param>
+        + FPDiv<Problem::Float, Problem::Param>
+        + FPTranspose<Problem::Param>
+        + FPDot<Problem::Param, Problem::Square>
+        + FPDot<Problem::Square, Problem::Param>
+        + FPDot<Problem::Param, Problem::Float>
+        + FPInto2D<Problem::Square>,
+    Problem::Square: FPEye
         + FPFromZeros
         + FPEmpty
-        + FPTranspose
-        + FPDot<P::Square, P::Square>
-        + FPDot<P::Param, P::Param>
-        + FPStack<P::Param>,
+        + FPTranspose<Problem::Square>
+        + FPDot<Problem::Square, Problem::Square>
+        + FPDot<Problem::Param, Problem::Param>
+        + FPStack<Problem::Param, Problem::Square>,
 {
     fn default() -> Self {
-        Type1AndersonMixer::new(10, F::from_f64(1e-6).unwrap(), 1000)
+        Type1AndersonMixer::new(10, T::from_f64(1e-6).unwrap(), 1000)
     }
 }
 
-impl<F: FPFloat, P: FixedPointProblem<Float = F>> Type1AndersonMixer<F, P>
+impl<T: FPFloat, Problem: FixedPointProblem<Float = T>> Type1AndersonMixer<T, Problem>
 where
-    P::Param: FPFromZeros
-        + FPSub<P::Param, P::Param>
-        + FPNorm<P::Float>
-        + FPMul<P::Float, P::Param>
-        + FPAdd<P::Param, P::Param>
-        + FPDiv<P::Float, P::Param>
-        + FPTranspose
-        + FPDot<P::Square, P::Param>
-        + FPDot<P::Param, P::Float>
-        + FPInto2D<P::Square>,
-    P::Square: FPEye
+    Problem::Param: FPFromZeros
+        + FPSub<Problem::Param, Problem::Param>
+        + FPNorm<Problem::Float>
+        + FPMul<Problem::Float, Problem::Param>
+        + FPAdd<Problem::Param, Problem::Param>
+        + FPDiv<Problem::Float, Problem::Param>
+        + FPTranspose<Problem::Param>
+        + FPDot<Problem::Square, Problem::Param>
+        + FPDot<Problem::Param, Problem::Float>
+        + FPInto2D<Problem::Square>,
+    Problem::Square: FPEye
         + FPFromZeros
         + FPEmpty
-        + FPTranspose
-        + FPDot<P::Square, P::Square>
-        + FPDot<P::Param, P::Param>
-        + FPStack<P::Param>,
+        + FPTranspose<Problem::Square>
+        + FPDot<Problem::Square, Problem::Square>
+        + FPDot<Problem::Param, Problem::Param>
+        + FPStack<Problem::Param, Problem::Square>,
 {
     /// Generate a new Anderson Mixer with default parameters
-    pub fn new(dimension: usize, tolerance: F, max_iter: u64) -> Self {
+    pub fn new(dimension: usize, tolerance: T, max_iter: u64) -> Self {
         Type1AndersonMixer {
             dim: dimension,
             tol: tolerance,
-            regularisation: F::from_f64(1.).unwrap(),
-            safeguard_factor: F::from_f64(1e6).unwrap(),
+            regularisation: T::from_f64(1.).unwrap(),
+            safeguard_factor: T::from_f64(1e6).unwrap(),
             iter: 0,
             m: 0,
             max_iter,
-            beta: F::from_f64(1.).unwrap(),
+            beta: T::from_f64(1.).unwrap(),
             memory: 5,
-            theta_bar: F::from_f64(1e-2).unwrap(),
-            epsilon: F::from_f64(1e-6).unwrap(),
-            tau: F::from_f64(1e-3).unwrap(),
-            h_matrix: P::Square::eye(dimension),
-            hv1: P::Square::zeros(0),
-            hv2: P::Square::zeros(0),
-            sk_hat: P::Param::zeros(dimension),
-            s: P::Param::zeros(dimension),
-            fx0: P::Param::zeros(dimension),
-            x0: P::Param::zeros(dimension),
-            y0: P::Param::zeros(dimension),
-            g0: P::Param::zeros(dimension),
-            s0: P::Param::zeros(dimension),
-            fx1: P::Param::zeros(dimension),
-            x1: P::Param::zeros(dimension),
-            g1: P::Param::zeros(dimension),
-            g_prev: P::Param::zeros(dimension),
-            s1: P::Param::zeros(dimension),
-            s0_hat: P::Param::zeros(dimension),
-            s_history: P::Square::zeros(0),
-            s_hat_memory: P::Square::zeros(0),
-            y_tilde: P::Param::zeros(dimension),
-            ubar: F::from_f64(0.).unwrap(),
+            theta_bar: T::from_f64(1e-2).unwrap(),
+            epsilon: T::from_f64(1e-6).unwrap(),
+            tau: T::from_f64(1e-3).unwrap(),
+            h_matrix: Problem::Square::eye(dimension),
+            hv1: Problem::Square::zeros(0),
+            hv2: Problem::Square::zeros(0),
+            sk_hat: Problem::Param::zeros(dimension),
+            s: Problem::Param::zeros(dimension),
+            fx0: Problem::Param::zeros(dimension),
+            x0: Problem::Param::zeros(dimension),
+            y0: Problem::Param::zeros(dimension),
+            g0: Problem::Param::zeros(dimension),
+            s0: Problem::Param::zeros(dimension),
+            fx1: Problem::Param::zeros(dimension),
+            x1: Problem::Param::zeros(dimension),
+            g1: Problem::Param::zeros(dimension),
+            g_prev: Problem::Param::zeros(dimension),
+            s1: Problem::Param::zeros(dimension),
+            s0_hat: Problem::Param::zeros(dimension),
+            s_history: Problem::Square::zeros(0),
+            s_hat_memory: Problem::Square::zeros(0),
+            y_tilde: Problem::Param::zeros(dimension),
+            ubar: T::from_f64(0.).unwrap(),
             n_anderson: 0,
         }
     }
 
     /// Factory method to set the regularisation parameter
-    pub fn regularisation(mut self, regularisation: F) -> Self {
+    pub fn regularisation(mut self, regularisation: T) -> Self {
         self.regularisation = regularisation;
         self
     }
 
     /// Factory method to set the safeguard factor
-    pub fn safeguard_factor(mut self, safeguard_factor: F) -> Self {
+    pub fn safeguard_factor(mut self, safeguard_factor: T) -> Self {
         self.safeguard_factor = safeguard_factor;
         self
     }
 
     /// Factory method to set the relaxation beta
-    pub fn beta(mut self, beta: F) -> Self {
+    pub fn beta(mut self, beta: T) -> Self {
         self.beta = beta;
         self
     }
@@ -159,7 +159,11 @@ where
     }
 
     /// Helper method to initialise for the first iteration
-    fn init(&mut self, op: &mut P, state: &State<P>) -> Result<(), FixedPointError> {
+    fn init(
+        &mut self,
+        op: &mut Problem,
+        state: &State<Problem>,
+    ) -> Result<(), FixedPointError<Problem::Float>> {
         self.fx0 = match op.update(&state.get_param()) {
             Ok(x) => x,
             Err(_) => return Err(FixedPointError::UpdateFailed),
@@ -174,7 +178,7 @@ where
     }
 
     /// Helper function for common matrix operation
-    fn h_aa(&self, input: &P::Param) -> P::Param {
+    fn h_aa(&self, input: &Problem::Param) -> Problem::Param {
         if self.hv1.is_empty() | self.hv2.is_empty() {
             input.clone()
         } else {
@@ -183,13 +187,13 @@ where
     }
 
     /// Safeguarding step
-    fn safeguard(&mut self, op: &mut P) -> Result<(), FixedPointError> {
+    fn safeguard(&mut self, op: &mut Problem) -> Result<(), FixedPointError<Problem::Float>> {
         let ubar0 = self.g0.norm();
         let factor = self.ubar
             * self.safeguard_factor
-            * F::from_u64(self.n_anderson + 1)
+            * T::from_u64(self.n_anderson + 1)
                 .unwrap()
-                .powf(-F::from_i64(1).unwrap() - self.epsilon);
+                .powf(-T::from_i64(1).unwrap() - self.epsilon);
         if (self.iter == 0) | (ubar0 <= factor) {
             debug!(iteration = self.iter, "Taking Anderson Step");
             self.n_anderson += 1;
@@ -200,7 +204,7 @@ where
             self.x1 = self
                 .fx0
                 .mul(&self.beta)
-                .add(&self.x0.mul(&(F::from_f64(1.).unwrap() - self.beta)));
+                .add(&self.x0.mul(&(T::from_f64(1.).unwrap() - self.beta)));
             self.x0 = self.x1.clone();
             self.fx0 = match op.update(&self.x0) {
                 Ok(x) => x,
@@ -223,17 +227,17 @@ where
             if self.s0_hat.norm() < self.tau * self.s0.norm() {
                 self.s0_hat = self.s0.clone();
                 self.m = 1;
-                self.s_hat_memory = P::Square::zeros(0);
-                self.hv1 = P::Square::zeros(0);
-                self.hv2 = P::Square::zeros(0);
+                self.s_hat_memory = Problem::Square::zeros(0);
+                self.hv1 = Problem::Square::zeros(0);
+                self.hv2 = Problem::Square::zeros(0);
             }
         } else {
             // memory exceeds
             self.s0_hat = self.s0.clone();
             self.m = 1;
-            self.s_hat_memory = P::Square::zeros(0);
-            self.hv1 = P::Square::zeros(0);
-            self.hv2 = P::Square::zeros(0);
+            self.s_hat_memory = Problem::Square::zeros(0);
+            self.hv1 = Problem::Square::zeros(0);
+            self.hv2 = Problem::Square::zeros(0);
         }
         let norm_s0_hat = self.s0_hat.norm();
         let new_shat_row = self.s0_hat.div(&norm_s0_hat);
@@ -250,16 +254,16 @@ where
             .div(norm_s0_hat.powi(2));
 
         let theta = if gamma.abs() >= self.theta_bar {
-            F::from_f64(1.).unwrap()
+            T::from_f64(1.).unwrap()
         } else {
-            F::from_f64(1.).unwrap()
-                - gamma.signum() * self.theta_bar.div(F::from_f64(1.).unwrap() - gamma)
+            T::from_f64(1.).unwrap()
+                - gamma.signum() * self.theta_bar.div(T::from_f64(1.).unwrap() - gamma)
         };
 
         self.y_tilde = self
             .y0
             .mul(&theta)
-            .sub(&self.g_prev.mul(&(F::from_f64(1.).unwrap() - theta)));
+            .sub(&self.g_prev.mul(&(T::from_f64(1.).unwrap() - theta)));
 
         let h_y_tilde = self.h_aa(&self.y_tilde);
         let hvec1 = self.s0.sub(&h_y_tilde);
@@ -279,33 +283,37 @@ where
     }
 }
 
-impl<P, F> Mixer<P> for Type1AndersonMixer<F, P>
+impl<T, Problem> MixerMethods<Problem> for Type1AndersonMixer<T, Problem>
 where
-    P::Param: FPFromZeros
-        + FPSub<P::Param, P::Param>
-        + FPNorm<P::Float>
-        + FPMul<P::Float, P::Param>
-        + FPAdd<P::Param, P::Param>
-        + FPDiv<P::Float, P::Param>
-        + FPTranspose
-        + FPDot<P::Square, P::Param>
-        + FPDot<P::Param, P::Float>
-        + FPInto2D<P::Square>
+    Problem::Param: FPFromZeros
+        + FPSub<Problem::Param, Problem::Param>
+        + FPNorm<Problem::Float>
+        + FPMul<Problem::Float, Problem::Param>
+        + FPAdd<Problem::Param, Problem::Param>
+        + FPDiv<Problem::Float, Problem::Param>
+        + FPTranspose<Problem::Param>
+        + FPDot<Problem::Square, Problem::Param>
+        + FPDot<Problem::Param, Problem::Float>
+        + FPInto2D<Problem::Square>
         + std::fmt::Debug
         + FPHoldsNaN,
-    P::Square: FPEye
+    Problem::Square: FPEye
         + FPFromZeros
         + FPEmpty
-        + FPTranspose
-        + FPDot<P::Square, P::Square>
-        + FPDot<P::Param, P::Param>
-        + FPStack<P::Param>,
-    P: FixedPointProblem<Float = F>,
-    F: FPFloat,
+        + FPTranspose<Problem::Square>
+        + FPDot<Problem::Square, Problem::Square>
+        + FPDot<Problem::Param, Problem::Param>
+        + FPStack<Problem::Param, Problem::Square>,
+    Problem: FixedPointProblem<Float = T>,
+    T: FPFloat,
 {
     const NAME: &'static str = "Type-I Anderson Mixing";
 
-    fn next_iter(&mut self, op: &mut P, state: &State<P>) -> Result<IterData<P>, FixedPointError> {
+    fn next_iter(
+        &mut self,
+        op: &mut Problem,
+        state: &State<Problem>,
+    ) -> Result<IterData<Problem>, FixedPointError<Problem::Float>> {
         if self.iter == 0 {
             match self.init(op, state) {
                 Ok(_) => (),
@@ -349,7 +357,10 @@ where
         Ok(IterData::new().cost(res.norm()).param(self.x1.clone()))
     }
 
-    fn terminate(&mut self, state: &State<P>) -> Result<TerminationReason> {
+    fn terminate(
+        &mut self,
+        state: &State<Problem>,
+    ) -> Result<TerminationReason, FixedPointError<Problem::Float>> {
         let condition = if state.cost < self.tol {
             TerminationReason::ToleranceBeaten
         } else if state.iter > self.max_iter {

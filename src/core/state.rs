@@ -6,23 +6,23 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 /// Struct to hold the iteration state
-pub struct State<O: FixedPointProblem> {
+pub struct State<Problem: FixedPointProblem> {
     /// Current parameter vector
-    pub param: O::Param,
+    pub param: Problem::Param,
     /// Previous parameter vector
-    pub prev_param: O::Param,
+    pub prev_param: Problem::Param,
     /// Current best parameter vector
-    pub best_param: O::Param,
+    pub best_param: Problem::Param,
     /// Previous best parameter vector
-    pub prev_best_param: O::Param,
+    pub prev_best_param: Problem::Param,
     /// Current cost function
-    pub cost: O::Float,
+    pub cost: Problem::Float,
     /// Previous cost
-    pub prev_cost: O::Float,
+    pub prev_cost: Problem::Float,
     /// Current best cost
-    pub best_cost: O::Float,
+    pub best_cost: Problem::Float,
     /// Previous best cost
-    pub prev_best_cost: O::Float,
+    pub prev_best_cost: Problem::Float,
     /// Current iteration
     pub iter: u64,
     /// Iteration number of last best cost
@@ -67,18 +67,18 @@ macro_rules! ogetter {
     };
 }
 
-impl<O: FixedPointProblem> State<O> {
+impl<Problem: FixedPointProblem> State<Problem> {
     /// Generate a new initial State
-    pub fn new(param: O::Param) -> Self {
+    pub fn new(param: Problem::Param) -> Self {
         State {
             param: param.clone(),
             prev_param: param.clone(),
             best_param: param.clone(),
             prev_best_param: param,
-            cost: O::Float::infinity(),
-            prev_cost: O::Float::infinity(),
-            best_cost: O::Float::infinity(),
-            prev_best_cost: O::Float::infinity(),
+            cost: Problem::Float::infinity(),
+            prev_cost: Problem::Float::infinity(),
+            best_cost: Problem::Float::infinity(),
+            prev_best_cost: Problem::Float::infinity(),
             iter: 0,
             last_best_iter: 0,
             max_iters: std::u64::MAX,
@@ -101,7 +101,7 @@ impl<O: FixedPointProblem> State<O> {
         self.termination_reason = reason;
     }
 
-    getter!(param, O::Param, "Returns current parameter vector");
+    getter!(param, Problem::Param, "Returns current parameter vector");
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -117,14 +117,14 @@ pub enum TerminationReason {
 
 #[derive(Clone, Debug, Default)]
 /// Struct for the output of a mixing operation
-pub struct IterData<P: FixedPointProblem> {
+pub struct IterData<Problem: FixedPointProblem> {
     /// The parameter at the current step
-    param: Option<P::Param>,
+    param: Option<Problem::Param>,
     /// The associated cost ||f(x) - x||
-    cost: Option<P::Float>,
+    cost: Option<Problem::Float>,
 }
 
-impl<P: FixedPointProblem> IterData<P> {
+impl<Problem: FixedPointProblem> IterData<Problem> {
     /// Creates a new iterdata struct
     pub fn new() -> Self {
         IterData {
@@ -134,17 +134,17 @@ impl<P: FixedPointProblem> IterData<P> {
     }
 
     /// Factory method to set 'param' field
-    pub fn param(mut self, param: P::Param) -> Self {
+    pub fn param(mut self, param: Problem::Param) -> Self {
         self.param = Some(param);
         self
     }
 
     /// Factory method to set 'cost' field
-    pub fn cost(mut self, cost: P::Float) -> Self {
+    pub fn cost(mut self, cost: Problem::Float) -> Self {
         self.cost = Some(cost);
         self
     }
 
-    ogetter!(param, P::Param, "Returns current parameter vector");
-    ogetter!(cost, P::Float, "Returns current cost");
+    ogetter!(param, Problem::Param, "Returns current parameter vector");
+    ogetter!(cost, Problem::Float, "Returns current cost");
 }

@@ -38,6 +38,40 @@ impl FixedPointProblem for TestCase {
     }
 }
 
+//use nalgebra::{Matrix6, Vector6};
+///// Simple test structure
+//struct TestCaseNAlgebra {
+//    _f: Vector6<f64>,
+//}
+//
+//impl TestCaseNAlgebra {
+//    /// Generates the new test structure
+//    fn new() -> TestCaseNAlgebra {
+//        TestCaseNAlgebra {
+//            _f: Vector6::zeros(),
+//        }
+//    }
+//}
+//
+///// Impl of a FixedPointProblem for the testcase
+//impl FixedPointProblem for TestCaseNAlgebra {
+//    type Output = Vector6<f64>;
+//    type Param = Vector6<f64>;
+//    type Float = f64;
+//    type Square = nalgebra::DMatrix<f64>;
+//
+//    fn update(&mut self, values: &Self::Param) -> Result<Self::Param> {
+//        let mut out = Vector6::zeros();
+//        out[0] = values[0].sin() * values[0].powi(2) + 0.05;
+//        out[1] = values[1].cos() * values[1].powi(2) + 0.05;
+//        out[2] = values[0].sin() * values[0].powi(2) + 0.09;
+//        out[3] = values[1].cos() * values[1].powi(2) + 0.1;
+//        out[4] = values[0].sin() * values[0].powi(2) + 0.25;
+//        out[5] = values[1].cos() * values[1].powi(2) + 0.35;
+//        Ok(out)
+//    }
+//}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -67,3 +101,29 @@ mod tests {
         println!("{}", result.get_param());
     }
 }
+
+//    //#[test]
+//    //fn test_linear_nalgebra() {
+//    //    let mut cost = TestCaseNAlgebra::new();
+//    //    let mixer: LinearMixer<f64> = LinearMixer::new(0.1, std::f64::EPSILON, 1000);
+//
+//    //    let init: nalgebra::Vector6<f64> = nalgebra::Vector6::from_element(1_f64);
+//    //    let mut solver = FixedPointSolver::new(mixer, init);
+//
+//    //    let result = solver.run(&mut cost).unwrap();
+//    //    println!("{}", result.get_param());
+//    //}
+//
+//    //#[test]
+//    //fn test_stable_anderson_nalgebra() {
+//    //    let mut cost = TestCaseNAlgebra::new();
+//    //    let init: Vector6<f64> = Vector6::from_element(1_f64);
+//    //    let mixer = Type1AndersonMixer::new(init.len(), std::f64::EPSILON, 1000);
+//
+//    //    let mut solver = FixedPointSolver::new(mixer, init);
+//
+//    //    let result = solver.run(&mut cost).unwrap();
+//    //    println!("{}", result.get_param());
+//    //}
+//}
+//

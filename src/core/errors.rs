@@ -7,7 +7,7 @@ use thiserror::Error;
 
 #[derive(Error, Diagnostic, Debug)]
 /// Error type for the crate
-pub enum FixedPointError {
+pub enum FixedPointError<T: std::fmt::Debug> {
     #[error("Unimplemented operation")]
     #[diagnostic(help("Check the default implementation for FixedPoint"), url(docsrs))]
     /// Error warns when a required trait or operation is unimplemented
@@ -23,7 +23,7 @@ pub enum FixedPointError {
     )]
     /// Error to warn when the iteration exceeds the maximum prescribed number
     /// The current cost is attached so as the degree of failure can be assessed
-    TooManyIterations(f64),
+    TooManyIterations(T),
     #[error("Failed to evaluate update")]
     #[diagnostic(
         help("Evaluating the update function failed, check in the upstream crate"),

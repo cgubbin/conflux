@@ -5,29 +5,28 @@ This module implements standard linear mixing, possibly with a relaxation parame
 */
 
 use crate::prelude::*;
-use miette::Result;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Deserialize, Serialize)]
 /// A simple linear mixer, with controlled relaxation
-pub struct LinearMixer<F> {
+pub struct LinearMixer<T> {
     /// Relaxation parameter
-    beta: F,
+    beta: T,
     /// Tolerance target
-    tol: F,
+    tol: T,
     /// Maximum iterations
     max_iter: u64,
 }
 
-impl<F: FPFloat> std::default::Default for LinearMixer<F> {
+impl<T: FPFloat> std::default::Default for LinearMixer<T> {
     fn default() -> Self {
-        LinearMixer::new(F::from_f64(1.).unwrap(), F::from_f64(1e-6).unwrap(), 1000)
+        LinearMixer::new(T::from_f64(1.).unwrap(), T::from_f64(1e-6).unwrap(), 1000)
     }
 }
 
-impl<F: FPFloat> LinearMixer<F> {
+impl<T: FPFloat> LinearMixer<T> {
     /// Constructor
-    pub fn new(beta: F, tol: F, max_iter: u64) -> Self {
+    pub fn new(beta: T, tol: T, max_iter: u64) -> Self {
         LinearMixer {
             beta,
             tol,
@@ -36,19 +35,23 @@ impl<F: FPFloat> LinearMixer<F> {
     }
 }
 
-impl<P, F> Mixer<P> for LinearMixer<F>
+impl<T, Problem> MixerMethods<Problem> for LinearMixer<T>
 where
-    P: FixedPointProblem<Float = F>,
-    P::Param: FPMul<P::Float, P::Param>
-        + FPAdd<P::Param, P::Param>
-        + FPSub<P::Param, P::Param>
-        + FPNorm<P::Float>
+    Problem: FixedPointProblem<Float = T>,
+    Problem::Param: FPMul<Problem::Float, Problem::Param>
+        + FPAdd<Problem::Param, Problem::Param>
+        + FPSub<Problem::Param, Problem::Param>
+        + FPNorm<Problem::Float>
         + FPHoldsNaN,
-    F: FPFloat,
+    T: FPFloat,
 {
     const NAME: &'static str = "Linear Mixing";
 
-    fn next_iter(&mut self, op: &mut P, state: &State<P>) -> Result<IterData<P>, FixedPointError> {
+    fn next_iter(
+        &mut self,
+        op: &mut Problem,
+        state: &State<Problem>,
+    ) -> Result<IterData<Problem>, FixedPointError<Problem::Float>> {
         let param = state.get_param();
         let output = match op.update(&param) {
             Ok(x) => x,
@@ -56,7 +59,7 @@ where
         };
         let new_param = output
             .mul(&self.beta)
-            .add(&param.mul(&(F::from_f64(1.0).unwrap() - self.beta)));
+            .add(&param.mul(&(T::from_f64(1.0).unwrap() - self.beta)));
 
         match new_param.holds_nan() {
             true => return Err(FixedPointError::NumericalDivergence),
@@ -68,7 +71,10 @@ where
             .param(new_param))
     }
 
-    fn terminate(&mut self, state: &State<P>) -> Result<TerminationReason> {
+    fn terminate(
+        &mut self,
+        state: &State<Problem>,
+    ) -> Result<TerminationReason, FixedPointError<Problem::Float>> {
         let condition = if state.cost < self.tol {
             TerminationReason::ToleranceBeaten
         } else if state.iter > self.max_iter {
