@@ -55,14 +55,11 @@ mod tests {
         let result = solver.run(&mut cost);
         assert!(result.is_ok());
         let result = result.unwrap();
-        dbg!(result.get_cost());
-        dbg!(result.get_param());
-        dbg!(result.is_terminated());
-        dbg!(result.iteration_count());
+        approx::assert_relative_eq!(result.get_cost(), 0_f64);
     }
 
     #[test]
-    fn test_stable_anderson() {
+    fn test_stable_anderson_ndarray() {
         let dimension = 10;
         let mut cost = TestFunctional::new(dimension);
         let init: Array1<f64> = Array1::ones(dimension);
@@ -73,9 +70,6 @@ mod tests {
         let result = solver.run(&mut cost);
         assert!(result.is_ok());
         let result = result.unwrap();
-        dbg!(result.get_cost());
-        dbg!(result.get_param());
-        dbg!(result.is_terminated());
-        dbg!(result.iteration_count());
+        approx::assert_relative_eq!(result.get_cost(), 0_f64);
     }
 }

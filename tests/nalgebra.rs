@@ -1,6 +1,5 @@
 use conflux::prelude::*;
-use nalgebra::storage::Storage;
-use nalgebra::{DMatrix, DVector, Vector};
+use nalgebra::{DMatrix, DVector};
 use rand::Rng;
 
 /// Simple test structure
@@ -17,10 +16,6 @@ impl TestFunctional {
         }
     }
 }
-
-use nalgebra::Dynamic;
-use nalgebra::{allocator::Allocator, DefaultAllocator};
-use nalgebra::{dimension::Dim, DimName, OMatrix, OVector};
 
 /// Impl of a FixedPointProblem for the testcase
 impl FixedPointProblem for TestFunctional {
@@ -60,10 +55,7 @@ mod tests {
         let result = solver.run(&mut cost);
         assert!(result.is_ok());
         let result = result.unwrap();
-        dbg!(result.get_cost());
-        dbg!(result.get_param());
-        dbg!(result.is_terminated());
-        dbg!(result.iteration_count());
+        approx::assert_relative_eq!(result.get_cost(), 0_f64);
     }
 
     #[test]
@@ -76,9 +68,6 @@ mod tests {
         let result = solver.run(&mut cost);
         assert!(result.is_ok());
         let result = result.unwrap();
-        dbg!(result.get_cost());
-        dbg!(result.get_param());
-        dbg!(result.is_terminated());
-        dbg!(result.iteration_count());
+        approx::assert_relative_eq!(result.get_cost(), 0_f64);
     }
 }

@@ -42,13 +42,13 @@ impl<I> FPFloat for I where
 /// The update method should carry out a full self-consistent iteration
 pub trait FixedPointProblem {
     /// The type of the output returned by the fixed point iteration
-    type Output: Clone; // + Serialize; // + DeserializeOwned;
+    type Output: Clone + Debug; // + Serialize; // + DeserializeOwned;
     /// The type of the input required by the fixed point iteration
-    type Param: Clone; // + Serialize; // + DeserializeOwned;
+    type Param: Clone + Debug; // + Serialize; // + DeserializeOwned;
     /// Floating point precision
-    type Float: FPFloat;
+    type Float: FPFloat + Debug;
     /// Type for square matrices
-    type Square: Clone; // + Serialize; // + DeserializeOwned;
+    type Square: Clone + Debug; // + Serialize; // + DeserializeOwned;
 
     /// Carries out the full self-consistent iteration for the problem
     fn update(

@@ -8,7 +8,7 @@ where
     #[inline]
     fn into_2d(self) -> DMatrix<N> {
         let n_points = self.iter().count();
-        let iter = self.iter().map(|x| *x);
+        let iter = self.iter().cloned();
         DMatrix::from_iterator(1, n_points, iter)
     }
 }

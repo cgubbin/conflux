@@ -60,7 +60,12 @@ where
 {
     #[inline]
     fn dot(&self, other: &DMatrix<N>) -> DVector<N> {
-        other * self
+        let promoted =
+            nalgebra::DMatrix::from_iterator(1, self.iter().len(), self.into_iter().cloned());
+        let out = promoted * other;
+        assert_eq!(out.shape().0, 1);
+        assert_eq!(out.shape().1, other.shape().1);
+        nalgebra::DVector::from_iterator(other.shape().1, out.into_iter().cloned())
     }
 }
 
@@ -173,7 +178,7 @@ mod tests {
                         1 as $t, 2 as $t, 3 as $t,
                         4 as $t, 5 as $t, 6 as $t,
                         7 as $t, 8 as $t, 9 as $t
-                    ].into_iter()).transpose();
+                    ].into_iter()).transpose(); // Transpose as DMatrix fill from iter column by column
                     let b = DVector::from(vec![1 as $t, 2 as $t, 3 as $t]);
                     let res = DVector::from(vec![14 as $t, 32 as $t, 50 as $t]);
                     let product: DVector<$t> =
