@@ -4,8 +4,12 @@ operate with generic math libraries
 */
 #[cfg(feature = "nalgebra")]
 mod nalgebra_math;
+#[cfg(feature = "nalgebra")]
+pub use nalgebra_math::*;
 #[cfg(feature = "ndarray")]
 mod ndarray_math;
+#[cfg(feature = "ndarray")]
+pub use ndarray_math::*;
 
 /// Add 'X' to 'self'
 pub trait FPAdd<X, Y> {

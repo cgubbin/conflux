@@ -11,3 +11,16 @@ mod stack;
 mod sub;
 mod transpose;
 mod zeros;
+
+pub use add::*;
+pub use div::*;
+pub use empty::*;
+pub use eye::*;
+pub use holds_nan::*;
+pub use into_2d::*;
+pub use mul::*;
+pub use norm::*;
+pub use stack::*;
+pub use sub::*;
+pub use transpose::*;
+pub use zeros::*;
