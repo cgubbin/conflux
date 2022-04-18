@@ -314,6 +314,7 @@ where
         op: &mut Problem,
         state: &State<Problem>,
     ) -> Result<IterData<Problem>, FixedPointError<Problem::Float>> {
+        println!("Beginning Anderson iter {}", self.iter);
         if self.iter == 0 {
             match self.init(op, state) {
                 Ok(_) => (),
@@ -329,6 +330,7 @@ where
         }
 
         self.s0 = self.x1.sub(&self.x0);
+        println!("Doing the inner iteration");
         self.fx1 = match op.update(&self.x1) {
             Ok(x) => x,
             Err(_) => return Err(FixedPointError::UpdateFailed),
@@ -336,6 +338,7 @@ where
         self.g1 = self.x1.sub(&self.fx1);
         self.y0 = self.g1.sub(&self.g0);
 
+        println!("Safeguarding");
         match self.safeguard(op) {
             Ok(_) => (),
             Err(e) => return Err(e),
@@ -345,9 +348,8 @@ where
         self.g_prev = self.g0.clone();
         self.g0 = self.x0.sub(&self.fx0);
 
-        dbg!(self.iter);
+        println!("Regularising");
         self.regularise();
-        dbg!(self.iter);
         let res = self.fx1.sub(&self.x1);
         self.iter += 1;
 
@@ -356,6 +358,7 @@ where
             false => (),
         };
 
+        println!("Iteration Complete");
         Ok(IterData::new().cost(res.norm()).param(self.x1.clone()))
     }
 
