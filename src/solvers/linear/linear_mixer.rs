@@ -52,6 +52,7 @@ where
         op: &mut Problem,
         state: &State<Problem>,
     ) -> Result<IterData<Problem>, FixedPointError<Problem::Float>> {
+        println!("The linear step...");
         let param = state.get_param();
         let output = match op.update(&param) {
             Ok(x) => x,
