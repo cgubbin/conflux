@@ -3,6 +3,7 @@ use nalgebra::{DMatrix, DVector};
 use rand::Rng;
 
 /// Simple test structure
+#[derive(Debug)]
 struct TestFunctional {
     x: DVector<f64>,
 }

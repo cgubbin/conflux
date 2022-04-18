@@ -7,7 +7,7 @@ This module implements standard linear mixing, possibly with a relaxation parame
 use crate::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize, Debug)]
 /// A simple linear mixer, with controlled relaxation
 pub struct LinearMixer<T> {
     /// Relaxation parameter

@@ -8,7 +8,7 @@ use crate::prelude::*;
 use serde::{Deserialize, Serialize};
 use tracing::debug;
 
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize, Debug)]
 /// Type 1 Anderson Mixer with stabilisation
 pub struct Type1AndersonMixer<T, Problem: FixedPointProblem> {
     dim: usize,

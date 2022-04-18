@@ -3,6 +3,7 @@ use ndarray::{Array1, Array2};
 use rand::Rng;
 
 /// Simple test structure
+#[derive(Debug)]
 struct TestFunctional {
     x: Array1<f64>,
 }
