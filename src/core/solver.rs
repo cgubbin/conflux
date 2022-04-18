@@ -81,8 +81,6 @@ where
         let _enter = span.enter();
         let running = Arc::new(AtomicBool::new(true));
 
-        println!("Running");
-
         while running.load(Ordering::SeqCst) {
             if !self.state.terminated() {
                 self.state
@@ -93,7 +91,6 @@ where
                 break;
             }
 
-            println!("Doing next iteration");
             let output = self.mixer.next_iter(op, &self.state).unwrap();
             self.update(&output);
             debug!(iteration = self.state.iter, cost = %self.state.cost);
