@@ -61,7 +61,7 @@ where
     Problem: FixedPointProblem,
     // P::Float: FPIntof64,
     Problem::Float: std::fmt::Display,
-    Mixer: MixerMethods<Problem> + std::fmt::Debug,
+    Mixer: MixerMethods<Problem>,
 {
     /// Create a fixed point solver from a Mixer and a starting parameter
     pub fn new(mixer: Mixer, initial_parameter: Problem::Param) -> Self {
@@ -81,7 +81,7 @@ where
         let _enter = span.enter();
         let running = Arc::new(AtomicBool::new(true));
 
-        println!("Running: {:?}", self.mixer);
+        println!("Running");
 
         while running.load(Ordering::SeqCst) {
             if !self.state.terminated() {
