@@ -1,3 +1,4 @@
+use crate::core::TerminationReason;
 use crate::core::{FixedPointError, FixedPointProblem, IterData, MixerMethods, State};
 use miette::Result;
 use serde::{Deserialize, Serialize};
@@ -97,10 +98,8 @@ where
         }
 
         // See if we hit the maximum iteration number or not
-        dbg!(self.state.iter, self.state.max_iters);
-        dbg!(&self.state.termination_reason);
-        match self.state.iter < self.state.max_iters {
-            true => {
+        match self.state.termination_reason {
+            TerminationReason::ToleranceBeaten => {
                 debug!(
                     iterations = self.state.iter,
                     cost = %self.state.cost,
@@ -108,7 +107,7 @@ where
                 );
                 Ok(self.generate_result())
             }
-            false => {
+            _ => {
                 warn!("Failed to reach required tolerance");
                 Err(FixedPointError::TooManyIterations(self.state.cost))
             }
