@@ -98,6 +98,7 @@ where
 
         // See if we hit the maximum iteration number or not
         dbg!(self.state.iter, self.state.max_iters);
+        dbg!(&self.state.termination_reason);
         match self.state.iter < self.state.max_iters {
             true => {
                 debug!(
